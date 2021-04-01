@@ -1,0 +1,1 @@
+# squerall-gui

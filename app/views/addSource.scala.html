@@ -1,0 +1,62 @@
+@(message: String, style: String = "scala")
+
+@defining(play.core.PlayVersion.current) { version =>
+
+<div class="alert alert-info" role="alert" style="margin-top: 20px;">
+Select a data source to connect to from the below list
+</div>
+
+<ul class="list-group">
+    <li class="list-group-item d-flex justify-content-between align-items-center addSrc hoverable" data-type="csv">
+        CSV file
+    </li>
+    <li class="list-group-item d-flex justify-content-between align-items-center addSrc hoverable" data-type="parquet">
+        Parquet
+    </li>
+    <li class="list-group-item d-flex justify-content-between align-items-center addSrc hoverable" data-type="mongodb">
+        MongoDB
+    </li>
+    <li class="list-group-item d-flex justify-content-between align-items-center addSrc hoverable" data-type="cassandra">
+        Cassandra
+    </li>
+    <li class="list-group-item d-flex justify-content-between align-items-center addSrc hoverable" data-type="jdbc">
+        JDBC
+    </li>
+    <li class="list-group-item d-flex justify-content-between align-items-center hoverable grayed" data-type="jdbc">
+        Couchbase (alpha)
+    </li>
+    <li class="list-group-item d-flex justify-content-between align-items-center hoverable grayed" data-type="jdbc">
+        Elasticsearch (alpha)
+    </li>
+</ul>
+
+<div class="alert alert-warning" role="alert" style="margin-top: 20px;">
+    - CSV schema extractor only accepts path to the exact CSV file, not the folder where it is stored.</br>
+    - To allow Parquet schema extraction, you have to set the value for pathToParquetToolsJar in 'application.conf' (see the Docs). </br>
+</div>
+
+
+<!-- Modal -->
+  <div class="modal fade" id="sourceModal" tabindex="-1" role="dialog" aria-labelledby="sourceModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="sourceModalLabel">Add a new source</h5>
+				<input type='hidden' id='slctdSrc' />
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" >
+				<div class="form-group">
+                	<div id="options"></div>
+				</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveSrc">Add source</button>
+            </div>
+        </div>
+    </div>
+</div>
+}
