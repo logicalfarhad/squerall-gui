@@ -2,7 +2,7 @@ lazy val root = (project in file(".")).enablePlugins(PlayScala).settings(
   name := """Squerall-GUI""",
   organization := "com.fraunhofer.vocoreg",
   version := "1.0-SNAPSHOT",
-  scalaVersion := "2.11.12",
+  scalaVersion := "2.13.5",
   libraryDependencies ++= Seq(
     guice,
     "org.scalatestplus.play" %% "scalatestplus-play" % "4.0.3" % Test,

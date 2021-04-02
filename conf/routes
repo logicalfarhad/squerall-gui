@@ -4,41 +4,36 @@
 # ~~~~
 
 # An example controller showing a sample home page
-GET     /                           controllers.HomeController.index
+GET     /                           controllers.HomeController.index()
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file                        controllers.Assets.versioned(path="/public", file: Asset)
 
-GET     /squerall                            controllers.SquerallController.index
+GET     /squerall                            controllers.SquerallController.index()
 
-GET     /squerall/addSource                  controllers.SquerallController.addSource
+GET     /squerall/addSource                  controllers.SquerallController.addSource()
 
-GET     /squerall/addMappings                controllers.SquerallController.addMappings
+GET     /squerall/addMappings                controllers.SquerallController.addMappings()
 
 GET 	/squerall/addMappings/:entity		 controllers.SquerallController.annotate(entity: String)
 
-GET     /squerall/query                  	 controllers.SquerallController.query
+GET     /squerall/query                  	 controllers.SquerallController.query()
 
-GET     /squerall/insert                     controllers.MappingsController.insert
-
-+nocsrf
-POST    /newMappings                         controllers.AjaxController.newMappings
+GET     /squerall/insert                     controllers.MappingsController.insert()
 
 +nocsrf
-POST    /getEmptyOptions                     controllers.AjaxController.getEmptyOptions
+POST    /newMappings                         controllers.AjaxController.newMappings()
 
 +nocsrf
-POST    /setOptions                          controllers.AjaxController.setOptions
+POST    /getEmptyOptions                     controllers.AjaxController.getEmptyOptions()
 
 +nocsrf
-POST    /newMappings                         controllers.AjaxController.newMappings
+POST    /setOptions                          controllers.AjaxController.setOptions()
+
 
 +nocsrf
-POST    /generateMappings                    controllers.AjaxController.generateMappings
+POST    /generateMappings                    controllers.AjaxController.generateMappings()
 
 GET     /getPredicates                       controllers.AjaxController.getPredicates(p, has : Option[Seq[String]])
 
 GET     /getClasses                          controllers.AjaxController.getClasses(c)
-
-# Map static resources from the /public folder to the /assets URL path
-GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)

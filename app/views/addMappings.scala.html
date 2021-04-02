@@ -4,7 +4,7 @@
 
 <div class="alert alert-info" role="alert" style="margin-top: 20px;">
 @if(data.isEmpty) {
-	No source added yet. Go to <a href="@routes.SquerallController.addSource">Sources</a> to add one.
+	No source added yet. Go to <a href="@routes.SquerallController.addSource()">Sources</a> to add one.
 } else {
 	Select a data source to annotate from the following list. 
 }
@@ -20,7 +20,7 @@
 }
 </ul>
 
-@if(!data.isEmpty) {
+@if(data.nonEmpty) {
 	<button type="button" class="btn btn-primary" id="generateMappings" style="margin-top: 10px;">Generate mappings</button>
 }
 <div id="mappings">

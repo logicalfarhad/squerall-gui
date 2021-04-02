@@ -1,28 +1,28 @@
 package controllers
-import javax.inject._
+
+import org.dizitart.no2.{Document, Nitrite, NitriteCollection}
+import org.slf4j.{Logger, LoggerFactory}
 import play.api.mvc._
-import org.dizitart.no2.Nitrite
-import org.dizitart.no2.NitriteId
-import org.dizitart.no2.Document
-import org.dizitart.no2.NitriteCollection
 import services.MappingsDB
+import javax.inject._
 
 
 @Singleton
-class MappingsController @Inject() (cc: ControllerComponents, database: MappingsDB) extends AbstractController(cc) {
-                                
-  def insert = Action(parse.tolerantFormUrlEncoded) {
+class MappingsController @Inject()(cc: ControllerComponents, database: MappingsDB) extends AbstractController(cc) {
+  val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
-    val db : Nitrite = database.connectDB
-    
-		var collection : NitriteCollection = db.getCollection("mappings")
-		var doc = Document.createDocument("entity", 4)
-			.put("source", 1)
-			.put("ID", 2)
-			.put("class", 3)
+  def insert: Action[AnyContent] = Action(parse.tolerantFormUrlEncoded) {
+
+    val db: Nitrite = database.connectDB()
+
+    val collection: NitriteCollection = db.getCollection("mappings")
+    val doc = Document.createDocument("entity", 4)
+      .put("source", 1)
+      .put("ID", 2)
+      .put("class", 3)
 
     collection.insert(doc)
 
-    Ok("Document added") 
+    Ok("Document added")
   }
 }

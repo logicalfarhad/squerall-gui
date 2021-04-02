@@ -1,7 +1,7 @@
 package services
 
 import org.dizitart.no2.Nitrite
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 import play.api.Configuration
 
 import javax.inject._
@@ -9,13 +9,13 @@ import javax.inject._
 trait MappingsDB {
   def connectDB(): Nitrite
 
-  def getDB(): Nitrite
+  def getDB: Nitrite
 }
 
 @Singleton
 class MappingsDBInstance @Inject()(playconfiguration: Configuration) extends MappingsDB {
 
-  val logger = LoggerFactory.getLogger(this.getClass)
+  val logger:Logger = LoggerFactory.getLogger(this.getClass)
   logger.info(s"MappingsDB: Starting a database connection.")
   var db: Nitrite = null
 
@@ -29,7 +29,7 @@ class MappingsDBInstance @Inject()(playconfiguration: Configuration) extends Map
     db
   }
 
-  override def getDB(): Nitrite = {
+  override def getDB: Nitrite = {
     db
   }
 }
