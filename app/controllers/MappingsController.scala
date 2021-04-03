@@ -12,10 +12,7 @@ class MappingsController @Inject()(cc: ControllerComponents, database: MappingsD
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   def insert: Action[AnyContent] = Action(parse.tolerantFormUrlEncoded) {
-
-    val db: Nitrite = database.connectDB()
-
-    val collection: NitriteCollection = db.getCollection("mappings")
+    val collection: NitriteCollection = database.get_collection("mappings")
     val doc = Document.createDocument("entity", 4)
       .put("source", 1)
       .put("ID", 2)

@@ -1,35 +1,45 @@
 package services
 
-import org.dizitart.no2.Nitrite
+import org.dizitart.no2.{Cursor, Filter, Nitrite, NitriteCollection}
 import org.slf4j.{Logger, LoggerFactory}
-import play.api.Configuration
 
 import javax.inject._
 
 trait MappingsDB {
-  def connectDB(): Nitrite
+  def get_db: Nitrite
 
-  def getDB: Nitrite
+  def connect_db: Nitrite
+
+  def get_cursor(name: String, cls: Filter): Cursor
+
+  def get_collection(name: String): NitriteCollection
 }
 
 @Singleton
-class MappingsDBInstance @Inject()(playconfiguration: Configuration) extends MappingsDB {
+class MappingsDBInstance @Inject() extends MappingsDB {
 
-  val logger:Logger = LoggerFactory.getLogger(this.getClass)
+  val logger: Logger = LoggerFactory.getLogger(this.getClass)
   logger.info(s"MappingsDB: Starting a database connection.")
-  var db: Nitrite = null
-
-  override def connectDB(): Nitrite = {
-    val mappingsDB = playconfiguration.underlying.getString("mappingsDB")
-    if (db == null) {
-      db = Nitrite.builder()
-        .filePath(mappingsDB)
-        .openOrCreate()
-    }
+  var db: Nitrite = _
+  override def get_db: Nitrite = {
     db
   }
+  override def get_cursor(name: String, cls: Filter): Cursor = {
+    if (cls == null)
+      get_collection(name).find
+    get_collection(name).find(cls)
+  }
 
-  override def getDB: Nitrite = {
+  override def get_collection(name: String): NitriteCollection = {
+    connect_db.getCollection(name)
+  }
+
+  override def connect_db: Nitrite = {
+    if (db == null) {
+      db = Nitrite.builder()
+        .filePath("mapping.db")
+        .openOrCreate()
+    }
     db
   }
 }

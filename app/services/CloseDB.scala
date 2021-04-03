@@ -11,7 +11,7 @@ import scala.concurrent.Future
 class CloseDB @Inject() (database: MappingsDB, appLifecycle: ApplicationLifecycle) {
   val logger:Logger = LoggerFactory.getLogger(this.getClass)
   appLifecycle.addStopHook { () =>
-    val db : Nitrite = database.getDB
+    val db : Nitrite = database.get_db
     logger.info(s"CloseDB: closing database connection.")
     if (!db.isClosed)
       db.close()

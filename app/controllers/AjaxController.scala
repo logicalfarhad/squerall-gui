@@ -5,6 +5,7 @@ import play.api.Configuration
 import play.api.libs.json._
 import play.api.mvc._
 import services.MappingsDB
+
 import java.io._
 import javax.inject._
 import scala.collection.immutable.HashMap
@@ -26,7 +27,7 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
   val logger:Logger = LoggerFactory.getLogger(this.getClass)
   def getEmptyOptions: Action[Map[String, Seq[String]]] = Action(parse.tolerantFormUrlEncoded) {
     request =>
-      val paramVal: String = request.body.get("dataType").map(_.head).getOrElse("").toString // javalangstring
+      val paramVal: String = request.body.get("dataType").map(_.head).getOrElse("")
 
       val response = Json.stringify(getOptions(paramVal))
 
@@ -41,7 +42,8 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
       var srcOptsToAppend = ""
       val sourcesConfFile = playconfiguration.underlying.getString("sourcesConfFile")
 
-      var lines_list = Source.fromFile(sourcesConfFile).getLines().toList
+      val configs = Source.fromFile("config")
+      var lines_list = try configs.getLines().toList finally configs.close()
       var commaOrnNot = ""
       if (lines_list.isEmpty)
         srcOptsToAppend = srcOptsToAppend + "{\n\t\"sources\": [\n"
@@ -111,20 +113,18 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
       val src: String = request.body.get("src").map(_.head).getOrElse("")
       val dtype: String = request.body.get("dtype").map(_.head).getOrElse("")
 
+      import org.dizitart.no2.Document
       import org.dizitart.no2.filters.Filters
-      import org.dizitart.no2.{Document, Nitrite}
 
       var propertiesMap: HashMap[String, String] = new HashMap()
       var prefixMap: HashMap[String, String] = new HashMap()
-      val db: Nitrite = database.connectDB()
-      val collection = db.getCollection("mappings")
-      val cursor = collection.find(Filters.eq("entity", entity))
-      var returnMsg = ""
 
+      val cursor = database.get_cursor("mappings",Filters.eq("entity", entity))
+      var returnMsg = ""
+      val collection = database.get_collection("mappings")
       if (cursor.size() > 0) {
         collection.remove(Filters.eq("entity", entity))
-
-        returnMsg = "Entity already exisits, it has been overtten"
+        returnMsg = "Entity already exists, it has been overwritten"
       } else {
         returnMsg = "Entity added"
       }
@@ -170,14 +170,10 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
 
   def getPredicates(p: String, hasP: Option[Seq[String]]): Action[AnyContent] = Action {
 
-    import org.dizitart.no2.{Document, Nitrite}
-
+    import org.dizitart.no2.Document
     import scala.jdk.CollectionConverters._
 
-
-    val db: Nitrite = database.connectDB()
-    val collection = db.getCollection("mappings")
-    val cursor = collection.find()
+    val cursor = database.get_cursor("mapping",null)
     val projection = Document.createDocument("propertiesMap", null).put("prolog", null)
     val documents = cursor.project(projection)
     var suggestedPredicates: Set[String] = Set()
@@ -212,16 +208,12 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
   }
 
   def getClasses(c: String): Action[AnyContent] = Action {
-    import org.dizitart.no2.Nitrite
     import org.dizitart.no2.filters.Filters
-
     import scala.jdk.CollectionConverters._
 
     var suggestedClasses: Set[String] = Set()
-    val db: Nitrite = database.connectDB()
-    val collection = db.getCollection("mappings")
-    val cursor = collection.find(Filters.regex("class", c))
 
+    val cursor = database.get_cursor("mapping",Filters.regex("class", c))
     for (document <- cursor.toList.asScala) {
       val prologMap = document.get("prolog").asInstanceOf[HashMap[String, String]]
       val clss = document.get("class").toString
@@ -238,11 +230,7 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
   }
 
   def generateMappings: Action[AnyContent] = Action {
-    import org.dizitart.no2.Nitrite
-
-    val db: Nitrite = database.connectDB()
-    val collection = db.getCollection("mappings")
-    val cursor = collection.find()
+    val cursor = database.get_cursor("mappings",null)
     var rml = ""
     var allPrefixes: HashMap[String, String] = new HashMap()
 
@@ -265,7 +253,7 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
       rml = rml + "\n\n<#" + entity + "Mapping>"
       rml = rml + "\n\trml:logicalSource ["
       rml = rml + "\n\t\trml:source \"" + source + "\";"; // eg. hdfs://localhost:9000/thesis/insurance_test.csv
-      rml = rml + "\n\t\tnosql:Store nosql:" + dtype;
+      rml = rml + "\n\t\tnosql:Store nosql:" + dtype
       rml = rml + "\n\t];"
 
       rml = rml + "\n\trr:subjectMap ["

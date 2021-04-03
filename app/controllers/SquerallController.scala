@@ -6,18 +6,18 @@ import play.api.Configuration
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.api.mvc._
-
 import java.io.{BufferedReader, InputStreamReader, _}
 import java.net.URI
 import javax.inject._
 import scala.collection.immutable.HashMap
-import scala.io.Source
+import scala.io.{BufferedSource, Source}
 import scala.sys.process._
 
 
 @Singleton
 class SquerallController @Inject()(cc: ControllerComponents, playconfiguration: Configuration) extends AbstractController(cc) {
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
+
 
   def index: Action[AnyContent] = Action {
     Ok(views.html.squerall("Home", null))
@@ -32,14 +32,11 @@ class SquerallController @Inject()(cc: ControllerComponents, playconfiguration: 
   }
 
   def addMappings(): Action[AnyContent] = Action {
-
-    val sourcesConfFile = playconfiguration.underlying.getString("sourcesConfFile")
-    val data: String = Source.fromFile(sourcesConfFile).getLines().mkString
-    var source_dtype: Map[String, String] = Map()
-
+    val configs = Source.fromFile("config")
+    val data: String = try configs.mkString finally configs.close()
+    var source_types: Map[String, String] = Map()
     if (data.trim != "") {
       val json: JsValue = Json.parse(data)
-
       case class SourceObject(dtype: String, entity: String)
 
       implicit val userReads: Reads[SourceObject] = (
@@ -50,18 +47,17 @@ class SquerallController @Inject()(cc: ControllerComponents, playconfiguration: 
       val sources = (json \ "sources").as[Seq[SourceObject]]
 
       for (s <- sources) {
-        source_dtype = source_dtype + (s.entity -> s.dtype)
+        source_types = source_types + (s.entity -> s.dtype)
       }
     }
 
-    Ok(views.html.squerall("Add mappings", source_dtype))
+    Ok(views.html.squerall("Add mappings", source_types))
   }
 
   def annotate(entity: String): Action[AnyContent] = Action {
     import scala.language.postfixOps
-    val sourcesConfFile = playconfiguration.underlying.getString("sourcesConfFile")
-
-    val data: String = Source.fromFile(sourcesConfFile).getLines().mkString
+    val configs: BufferedSource = Source.fromFile("config")
+    val data: String = try configs.mkString finally configs.close()
     val json: JsValue = Json.parse(data)
 
     case class ConfigObject(dtype: String, source: String, options: Map[String, String], entity: String)
@@ -103,7 +99,7 @@ class SquerallController @Inject()(cc: ControllerComponents, playconfiguration: 
         val conf = new Configuration()
         fileSystem.initialize(new URI("hdfs://namenode-host:54310"), conf)
         val input = fileSystem.open(new Path(source))
-        schema = (new BufferedReader(new InputStreamReader(input))).readLine()
+        schema = new BufferedReader(new InputStreamReader(input)).readLine()
 
       } else {
         val f = new File(source)
@@ -128,7 +124,7 @@ class SquerallController @Inject()(cc: ControllerComponents, playconfiguration: 
       val table = optionsPerStar(source)("table")
       val keyspace = optionsPerStar(source)("keyspace")
 
-      var cluster: Cluster = null;
+      var cluster: Cluster = null
       try {
         cluster = com.datastax.driver.core.Cluster.builder()
           .addContactPoint("127.0.0.1")
@@ -136,17 +132,18 @@ class SquerallController @Inject()(cc: ControllerComponents, playconfiguration: 
 
         val session: com.datastax.driver.core.Session = cluster.connect()
 
-        val rs: com.datastax.driver.core.ResultSet = session.execute("select column_name from system_schema.columns where keyspace_name = '" + keyspace + "' and table_name ='" + table + "'");
+        val rs: com.datastax.driver.core.ResultSet = session.execute("select column_name from system_schema.columns where keyspace_name = '" + keyspace + "' and table_name ='" + table + "'")
         val it = rs.iterator()
         while (it.hasNext) {
           val row = it.next()
           schema = schema + row.getString("column_name") + ","
         }
       } finally {
-        if (cluster != null) cluster.close();
+        if (cluster != null) cluster.close()
       }
     } else if (dtype == "mongodb") {
       import com.mongodb.MongoClient
+      import scala.jdk.CollectionConverters._
 
       val url = optionsPerStar(source)("url")
       val db = optionsPerStar(source)("database")
@@ -156,11 +153,7 @@ class SquerallController @Inject()(cc: ControllerComponents, playconfiguration: 
       val database = mongoClient.getDatabase(db)
       val collection = database.getCollection(col)
 
-      val myDoc = collection.find.first
-      println("collection: " + myDoc)
-
       var set = Set[String]()
-      import scala.jdk.CollectionConverters._
       for (cur <- collection.find.limit(100).asScala) {
         for (x <- cur.asScala) {
           set = set + x._1
