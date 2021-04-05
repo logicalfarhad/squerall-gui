@@ -16,8 +16,10 @@ import scala.sys.process._
 
 @Singleton
 class SquerallController @Inject()(cc: ControllerComponents, playconfiguration: Configuration) extends AbstractController(cc) {
-  val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
+  val logger: Logger = LoggerFactory.getLogger(this.getClass)
+  val sourcesConfFile: String = playconfiguration.underlying.getString("sourcesConfFile")
+  val configs: BufferedSource = Source.fromFile(sourcesConfFile)
 
   def index: Action[AnyContent] = Action {
     Ok(views.html.squerall("Home", null))
@@ -32,10 +34,11 @@ class SquerallController @Inject()(cc: ControllerComponents, playconfiguration: 
   }
 
   def addMappings(): Action[AnyContent] = Action {
-    val configs = Source.fromFile("config")
+
     val data: String = try configs.mkString finally configs.close()
     var source_types: Map[String, String] = Map()
-    if (data.trim != "") {
+
+    if (data.trim.nonEmpty) {
       val json: JsValue = Json.parse(data)
       case class SourceObject(dtype: String, entity: String)
 
@@ -56,7 +59,6 @@ class SquerallController @Inject()(cc: ControllerComponents, playconfiguration: 
 
   def annotate(entity: String): Action[AnyContent] = Action {
     import scala.language.postfixOps
-    val configs: BufferedSource = Source.fromFile("config")
     val data: String = try configs.mkString finally configs.close()
     val json: JsValue = Json.parse(data)
 
@@ -143,6 +145,7 @@ class SquerallController @Inject()(cc: ControllerComponents, playconfiguration: 
       }
     } else if (dtype == "mongodb") {
       import com.mongodb.MongoClient
+
       import scala.jdk.CollectionConverters._
 
       val url = optionsPerStar(source)("url")

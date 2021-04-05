@@ -9,9 +9,8 @@ import services.{MappingsDBInstance, MappingsDB, CloseDB}
  */
 class Module extends AbstractModule {
 
-  override def configure() = {
+  override def configure():Unit = {
     bind(classOf[MappingsDB]).to(classOf[MappingsDBInstance])
     bind(classOf[CloseDB]).asEagerSingleton()
   }
-
 }

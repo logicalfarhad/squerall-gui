@@ -42,7 +42,7 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
       var srcOptsToAppend = ""
       val sourcesConfFile = playconfiguration.underlying.getString("sourcesConfFile")
 
-      val configs = Source.fromFile("config")
+      val configs = Source.fromFile(sourcesConfFile)
       var lines_list = try configs.getLines().toList finally configs.close()
       var commaOrnNot = ""
       if (lines_list.isEmpty)
