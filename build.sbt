@@ -6,7 +6,7 @@ lazy val root = (project in file(".")).enablePlugins(PlayScala).settings(
   libraryDependencies ++= Seq(
     guice,
     "org.scalatestplus.play" %% "scalatestplus-play" % "4.0.3" % Test,
-    "org.dizitart" % "nitrite" % "3.0.2",
+    "org.dizitart" % "nitrite" % "3.4.2",
     "org.apache.hadoop" % "hadoop-common" % "3.2.0",
     "org.apache.hadoop" % "hadoop-core" % "1.2.0",
     "com.outworkers" %% "phantom-dsl" % "2.59.0",

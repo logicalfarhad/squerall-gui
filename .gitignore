@@ -56,6 +56,7 @@ out/
 .bsp
 .gradle
 *.db
+conf/*.db
 
 # mpeltonen/sbt-idea plugin
 .idea_modules/
