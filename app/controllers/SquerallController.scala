@@ -15,11 +15,10 @@ import scala.sys.process._
 
 
 @Singleton
-class SquerallController @Inject()(cc: ControllerComponents, playconfiguration: Configuration) extends AbstractController(cc) {
+class SquerallController @Inject()(cc: ControllerComponents, configuration: Configuration) extends AbstractController(cc) {
 
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
-  val sourcesConfFile: String = playconfiguration.underlying.getString("sourcesConfFile")
-  val configs: BufferedSource = Source.fromFile(sourcesConfFile)
+  val sourcesConfFile: String = configuration.underlying.getString("sourcesConfFile")
 
   def index: Action[AnyContent] = Action {
     Ok(views.html.squerall("Home", null))
@@ -34,8 +33,8 @@ class SquerallController @Inject()(cc: ControllerComponents, playconfiguration: 
   }
 
   def addMappings(): Action[AnyContent] = Action {
-
-    val data: String = try configs.mkString finally configs.close()
+    val configs = Source.fromFile(sourcesConfFile)
+    val data = try configs.mkString finally configs.close()
     var source_types: Map[String, String] = Map()
 
     if (data.trim.nonEmpty) {
@@ -59,7 +58,9 @@ class SquerallController @Inject()(cc: ControllerComponents, playconfiguration: 
 
   def annotate(entity: String): Action[AnyContent] = Action {
     import scala.language.postfixOps
-    val data: String = try configs.mkString finally configs.close()
+    val configs = Source.fromFile(sourcesConfFile)
+
+    val data = try configs.mkString finally configs.close()
     val json: JsValue = Json.parse(data)
 
     case class ConfigObject(dtype: String, source: String, options: Map[String, String], entity: String)
@@ -109,7 +110,7 @@ class SquerallController @Inject()(cc: ControllerComponents, playconfiguration: 
       }
 
     } else if (dtype == "parquet") {
-      val pathToParquetToolsJar = playconfiguration.underlying.getString("pathToParquetToolsJar")
+      val pathToParquetToolsJar = configuration.underlying.getString("pathToParquetToolsJar")
       parquet_schema = "java -jar " + pathToParquetToolsJar + " schema " + source !!
 
       parquet_schema = parquet_schema.substring(parquet_schema.indexOf('\n') + 1)
