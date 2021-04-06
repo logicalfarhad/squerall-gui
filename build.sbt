@@ -17,6 +17,7 @@ lazy val root = (project in file(".")).enablePlugins(PlayScala).settings(
     "org.apache.jena" % "jena-arq" % "3.10.0"
   )
 )
+maintainer:= "SM Farhad Ali <farhad.ali@iais.fraunhofer.de>"
 
 
 
