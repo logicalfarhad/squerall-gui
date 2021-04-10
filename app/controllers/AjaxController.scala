@@ -52,8 +52,6 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
         commaOrnNot = "\t,"
       }
 
-      //new_lines = lines_list
-
       val pw = new PrintWriter(new File(sourcesConfFile))
       lines_list.foreach(l => pw.write(l + "\n"))
 
@@ -70,13 +68,12 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
       var src = ""
       var entity = ""
       var pathFound = false // To defrentiate between file-based sources (eg. CSV/Paruqet) and db based (eg. MongoDB, Cassandra)
-      for (kv <- 0 until optionsBits.length - 1) {
+      for (kv <- 0 until optionsBits.length) {
         val kvbits = optionsBits(kv).split(",", 2) // TODO: carefull where , used as csv delimiter
-        //var optValue = (kvbits(0) -> kvbits(1))
-        if (kvbits(0) == "\"path\"") { // move out of the options
+        if (kvbits(0) == "\"path\"") {
           src = kvbits(1)
           pathFound = true
-        } else if (kvbits(0) == "\"entity\"") // move out of the options
+        } else if (kvbits(0) == "\"entity\"")
           entity = kvbits(1)
         else {
           srcOptsToAppend = srcOptsToAppend + "\n\t\t\t" + kvbits(0) + ": " + kvbits(1)
@@ -96,7 +93,7 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
 
       pw.write(srcOptsToAppend)
 
-      pw.write("\n\t]\n}") // put back the two lines
+      pw.write("\n\t]\n}")
       pw.close()
 
       Ok(srcOptsToAppend)
@@ -104,7 +101,7 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
 
   def newMappings: Action[Map[String, Seq[String]]] = Action(parse.tolerantFormUrlEncoded) {
     request =>
-      val mappings: String = request.body.get("mappings").map(_.head).getOrElse("") // javalangstring
+      val mappings: String = request.body.get("mappings").map(_.head).getOrElse("")
       val pk: String = request.body.get("pk").map(_.head).getOrElse("")
       val clss: String = request.body.get("clss").map(_.head).getOrElse("")
       val shortns_clss: String = request.body.get("shortns_clss").map(_.head).getOrElse("")
