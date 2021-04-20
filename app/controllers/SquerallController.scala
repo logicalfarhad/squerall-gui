@@ -80,14 +80,12 @@ class SquerallController @Inject()(cc: ControllerComponents, configuration: Conf
     var options: Map[String, String] = Map()
     var dtype = ""
 
-    for (s <- sources) {
-      if (s.entity == entity) {
+    sources.foreach(s => if (s.entity == entity) {
         source = s.source
         options = s.options
         dtype = s.dtype
         optionsPerStar += (source -> options)
-      }
-    }
+      })
 
     var schema = ""
     var parquet_schema = ""
@@ -146,7 +144,6 @@ class SquerallController @Inject()(cc: ControllerComponents, configuration: Conf
       }
     } else if (dtype == "mongodb") {
       import com.mongodb.MongoClient
-
       import scala.jdk.CollectionConverters._
 
       val url = optionsPerStar(source)("url")

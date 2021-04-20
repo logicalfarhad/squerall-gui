@@ -11,7 +11,7 @@ trait MappingsDB {
 
   def connect_db: Nitrite
 
-  def get_cursor(name: String, cls: Filter): Cursor
+  def get_cursor(name: String, filter: Filter): Cursor
 
   def get_collection(name: String): NitriteCollection
 }
@@ -27,11 +27,11 @@ class MappingsDBInstance @Inject()(configuration: Configuration) extends Mapping
     db
   }
 
-  override def get_cursor(name: String, cls: Filter): Cursor = {
-    if (cls == null)
+  override def get_cursor(name: String, filter: Filter): Cursor = {
+    if (filter == null)
       get_collection(name).find
     else
-      get_collection(name).find(cls)
+      get_collection(name).find(filter)
   }
 
   override def get_collection(name: String): NitriteCollection = {
