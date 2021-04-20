@@ -5,7 +5,6 @@ import play.api.Configuration
 import play.api.libs.json._
 import play.api.mvc._
 import services.MappingsDB
-
 import java.io._
 import javax.inject._
 import scala.collection.immutable.HashMap
@@ -126,10 +125,15 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
         returnMsg = "Entity added"
       }
 
-      prefixMap += ("rr" -> "http://www.w3.org/ns/r2rml#")
-      prefixMap += ("rml" -> "http://semweb.mmlab.be/ns/rml#")
-      prefixMap += ("nosql" -> "http://purle.org/db/mysql#")
-      prefixMap += (shortns_clss -> ns_clss)
+      prefixMap += ("rr"   -> "http://www.w3.org/ns/r2rml#")
+      prefixMap += ("rml"  -> "http://semweb.mmlab.be/ns/rml#")
+      prefixMap += ("ql"   -> "http://semweb.mmlab.be/ns/ql#")
+      prefixMap += ("ex"   -> "http://example.com/ns#")
+      prefixMap += ("rdf"  -> "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+      prefixMap += ("rdfs" -> "http://www.w3.org/2000/01/rdf-schema#")
+      prefixMap += ("xsd"  -> "http://www.w3.org/2001/XMLSchema#")
+      prefixMap += ("ex"   -> "http://example.com/ns#")
+    //  prefixMap += (shortns_clss -> ns_clss)
 
       val mp = JSONstringToMap(mappings)
       for ((k, v) <- mp) {
@@ -234,7 +238,6 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
     val it = cursor.iterator()
     while (it.hasNext) {
       val document = it.next()
-
       val prolog = document.get("prolog").asInstanceOf[HashMap[String, String]]
       val entity = document.get("entity").toString
       val source = document.get("source").toString
@@ -247,10 +250,10 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
         allPrefixes += (pre._1 -> pre._2)
       }
 
-      rml = rml + "\n\n<#" + entity + "Mapping>"
+      rml = rml + "\n\n<#" + entity + "Mapping> a rr:TriplesMap;"
       rml = rml + "\n\trml:logicalSource ["
       rml = rml + "\n\t\trml:source \"" + source + "\";"; // eg. hdfs://localhost:9000/thesis/insurance_test.csv
-      rml = rml + "\n\t\tnosql:Store nosql:" + dtype
+      rml = rml + "\n\t\trml:referenceFormulation ql:" + dtype.toUpperCase
       rml = rml + "\n\t];"
 
       rml = rml + "\n\trr:subjectMap ["
@@ -258,18 +261,30 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
       rml = rml + "\n\t\trr:class " + clss
       rml = rml + "\n\t];\n"
 
-      for (pm <- propertiesMap) {
-        rml = rml + "\n\trr:predicateObjectMap ["
-        rml = rml + "\n\t\trr:predicate " + pm._1 + ";"
-        rml = rml + "\n\t\trr:objectMap [rml:reference " + pm._2 + "]"
+
+      propertiesMap.zipWithIndex.foreach{ 
+        case (item, index) => {
+            if(index < propertiesMap.size - 1){
+                rml = rml + "\n\trr:predicateObjectMap ["
+                rml = rml + "\n\t\trr:predicate " + item._1 + ";"
+                rml = rml + "\n\t\trr:objectMap [rml:reference " +item._2 + "]];"
+            }else{
+                rml = rml + "\n\trr:predicateObjectMap ["
+                rml = rml + "\n\t\trr:predicate " + item._1 + ";"
+                rml = rml + "\n\t\trr:objectMap [rml:reference " + item._2 + "]]."
+            }
+        }
       }
-      rml = rml + "."
     }
-
-    for (pre <- allPrefixes) {
-      rml = "@prefix " + pre._1 + ": <" + pre._2 + ">\n" + rml
+    
+    allPrefixes.foreach { item => {
+        if (item._1 == "ex") {
+          rml = "@base <" + item._2 + ">.\n" + rml
+        } else {
+          rml = "@prefix " + item._1 + ": <" + item._2 + ">.\n" + rml
+        }
+      }
     }
-
     Ok(rml)
   }
 
