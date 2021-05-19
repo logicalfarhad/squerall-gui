@@ -1,9 +1,9 @@
-$(document).ready(function(){
+$(function(){
 	$('[data-toggle="tooltip"]').tooltip()
 
   	$('.addSrc').on('click', function (e) {
 		$("#sourceModal").modal('toggle')
-		var type = $(this).data("type")
+		const type = $(this).data("type");
 
 		$.ajax({
 			method: "POST",
@@ -11,7 +11,7 @@ $(document).ready(function(){
 			data: { dataType: type },
 	 		dataType: "json",
 		}).done(function(data) {
-			var options = $("#options")
+			const options = $("#options");
 			options.html('');
 
 			options.append("<span>Entity </span>")
@@ -20,19 +20,19 @@ $(document).ready(function(){
 
 			// Iterate through the options
 			jQuery.each(data, function(index, value) {
-				var indexBits = index.split("_")
-				var option = indexBits[indexBits.length-1]			
-		
-				var descr = value[value.length - 1]
+				const indexBits = index.split("_");
+				const option = indexBits[indexBits.length - 1];
+
+				const descr = value[value.length - 1];
 				options.append("<span>" + option + " </span>")
 				options.append("<span class='badge badge-pill badge-info' data-toggle='tooltip' data-placement='top' title='" + descr + "'> i</span>:")
 	
 				if (value.length > 2) { // Multi-option dropbox
 					options.append("<select id='opt-" + index + "' class='form-control inpts'>")
-					for (var i = 0; i < value.length - 1; i++) {
+					for (let i = 0; i < value.length - 1; i++) {
 						$("#opt-" + index).append("<option value='" + value[i] + "'> " + value[i] + "</option>")
 					}
-				} else if (index == "path") { // select file
+				} else if (index === "path") { // select file
 					options.append("<div class='btn-group' data-toggle='buttons'>"+ 
 									"<label class='btn btn-secondary active'>" +
 									"<input type='radio' name='pathWay' id='showLocalPathInput' autocomplete='off' checked>Local</label>" +
@@ -40,7 +40,6 @@ $(document).ready(function(){
 								   "</div>")
 
 					options.append("<div id='pathSelector' style='width: 100%;'>"+ // class='custom-file'
-					//"<input type='file' class='custom-file-input' id='opt-" + index + "-local' />" +
 					"<input type='input' id='opt-" + index + "-local' class='form-control inpts' style='width: 100%;'/>" +
 					"<span></span>" + //class='custom-file-control'
 					"</div>")
@@ -56,11 +55,9 @@ $(document).ready(function(){
   	})
 
 	$('#saveSrc').on('click', function (e) {
-		var slctdSrc = $("#slctdSrc").val()
+		const slctdSrc = $("#slctdSrc").val();
 		$("#sourceModal").modal('toggle')
-
-		var optMap = new Map();
-		var array = [];
+		const optMap = new Map();
 		$('#options > option:selected').each(function() {
 			alert($(this).text())
 		    optMap.set($(this).parent().attr("id").split("-")[1], $(this).text());
@@ -70,9 +67,6 @@ $(document).ready(function(){
 		$('.inpts').each(function() {
 		    optMap.set($(this).attr("id").split("-")[1], $(this).val()); // Eliminate 'opt'
 		});
-			
-		console.log(mapToJson(optMap))
-
 		$.ajax({
 			method: "POST",
 			url: "/setOptions",
@@ -90,14 +84,10 @@ function mapToJson(map) {
 
 function pathSwitch(index) {
 	$('input:radio[name="pathWay"]').change(function(){
-		if($(this).attr("id") == 'showHDFSPathInput') {
+		if($(this).attr("id") === 'showHDFSPathInput') {
 			$("#pathSelector").html("<input id='opt-" + index + "-hdfs' type='input' value='hdfs://' class='form-control inpts' />")
-		} else if($(this).attr("id") == 'showLocalPathInput') {
+		} else if($(this).attr("id") === 'showLocalPathInput') {
 			$("#pathSelector").html("<input id='opt-" + index + "-local' type='input' value='' class='form-control inpts' />")
-			/*$("#pathSelector").html("<div id='pathSelector'><label class='custom-file'>"+
-			"<input type='file' class='custom-file-input' id='opt-" + index + "-local' />" +
-			"<span class='custom-file-control'></span>" +
-			"</label></div>")*/
 		}
 	});
 }

@@ -10,25 +10,5 @@
 		"source": "/home/sali/Person.csv",
 		"entity": "Person"
 	}
-	,	{
-		"type": "csv",
-		"options": {
-			"header": "true",
-			"delimiter": ",",
-			"mode": "PERMISSIVE"
-		},
-		"source": "d",
-		"entity": "a"
-	}
-	,	{
-		"type": "csv",
-		"options": {
-			"header": "true",
-			"delimiter": ",",
-			"mode": "PERMISSIVE"
-		},
-		"source": "/home/sali",
-		"entity": "Farhad"
-	}
 	]
 }

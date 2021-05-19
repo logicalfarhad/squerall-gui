@@ -10,6 +10,7 @@ import javax.inject._
 @Singleton
 class MappingsController @Inject()(cc: ControllerComponents, database: MappingsDB) extends AbstractController(cc) {
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
+
   def insert: Action[AnyContent] = Action(parse.tolerantFormUrlEncoded) {
     val collection: NitriteCollection = database.get_collection("mappings")
     val doc = Document.createDocument("entity", 4)
@@ -18,5 +19,8 @@ class MappingsController @Inject()(cc: ControllerComponents, database: MappingsD
       .put("class", 3)
     collection.insert(doc)
     Ok("Document added")
+  }
+  def getBranchName: Action[AnyContent] = Action {
+     NoContent
   }
 }

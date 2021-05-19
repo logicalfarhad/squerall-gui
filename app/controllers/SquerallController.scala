@@ -6,6 +6,8 @@ import play.api.Configuration
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.api.mvc._
+import services.MappingsDB
+
 import java.io.{BufferedReader, InputStreamReader, _}
 import java.net.URI
 import javax.inject._
@@ -15,13 +17,19 @@ import scala.sys.process._
 
 
 @Singleton
-class SquerallController @Inject()(cc: ControllerComponents, configuration: Configuration) extends AbstractController(cc) {
+class SquerallController @Inject()(cc: ControllerComponents, configuration: Configuration, database: MappingsDB) extends AbstractController(cc) {
 
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
   val sourcesConfFile: String = configuration.underlying.getString("sourcesConfFile")
 
   def index: Action[AnyContent] = Action {
     Ok(views.html.squerall("Home", null))
+  }
+
+  def getAll(branchname: String, instanceName: String): Action[AnyContent] = Action {
+    database.branch_name = branchname
+    database.instance_name = instanceName
+    Ok(Json.toJson(branchname + ":" + instanceName))
   }
 
   def query: Action[AnyContent] = Action {
@@ -58,6 +66,7 @@ class SquerallController @Inject()(cc: ControllerComponents, configuration: Conf
 
   def annotate(entity: String): Action[AnyContent] = Action {
     import scala.language.postfixOps
+
     val configs = Source.fromFile(sourcesConfFile)
 
     val data = try configs.mkString finally configs.close()
@@ -81,11 +90,11 @@ class SquerallController @Inject()(cc: ControllerComponents, configuration: Conf
     var dtype = ""
 
     sources.foreach(s => if (s.entity == entity) {
-        source = s.source
-        options = s.options
-        dtype = s.dtype
-        optionsPerStar += (source -> options)
-      })
+      source = s.source
+      options = s.options
+      dtype = s.dtype
+      optionsPerStar += (source -> options)
+    })
 
     var schema = ""
     var parquet_schema = ""
@@ -144,6 +153,7 @@ class SquerallController @Inject()(cc: ControllerComponents, configuration: Conf
       }
     } else if (dtype == "mongodb") {
       import com.mongodb.MongoClient
+
       import scala.jdk.CollectionConverters._
 
       val url = optionsPerStar(source)("url")

@@ -5,6 +5,7 @@ import play.api.Configuration
 import play.api.libs.json._
 import play.api.mvc._
 import services.MappingsDB
+
 import java.io._
 import javax.inject._
 import scala.collection.immutable.HashMap
@@ -156,8 +157,8 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
             val vbits = v.replace("\"", "").split("___") // eg. gd___http://purl.org/goodrelations/v1#legalName
             val short_ns = vbits(0) // eg. gd
             val pred_url = vbits(1) // eg. http://purl.org/goodrelations/v1#legalName
-            val pred_urlbits = v.replace("#", "/").split("/")
-            val pred = pred_urlbits(pred_urlbits.length - 1).replace("\"", "") // eg. legalName
+            val pred_url_bits = v.replace("#", "/").split("/")
+            val pred = pred_url_bits(pred_url_bits.length - 1).replace("\"", "") // eg. legalName
             val ns = pred_url.replace(pred, "") // eg. http://purl.org/goodrelations/v1#
 
             propertiesMap += (short_ns + ":" + pred -> k)
@@ -265,6 +266,7 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
       val prolog = document.get("prolog").asInstanceOf[HashMap[String, String]]
       val entity = document.get("entity").toString
       val source = document.get("source").toString
+      database.csv_file_path = source
       val clss = if (document.get("class") != null) document.get("class").toString
       val id = document.get("ID").toString
       val dtype = document.get("type").toString
@@ -274,7 +276,7 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
 
       rml = rml + "\n\n<#" + entity + "Mapping> a rr:TriplesMap;"
       rml = rml + "\n\trml:logicalSource ["
-      rml = rml + "\n\t\trml:source \"" + source + "\";";
+      rml = rml + "\n\t\trml:source \"" + source + "\";"
       rml = rml + "\n\t\trml:referenceFormulation ql:" + dtype.toUpperCase
       rml = rml + "\n\t];"
       rml = rml + "\n\trr:subjectMap ["
@@ -302,6 +304,12 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
       }
     }
     }
-    Ok(rml)
+    database.rml_text = rml
+    Ok(Json.toJson(Json.obj(
+      "csv_file_path" -> database.csv_file_path,
+      "rml_text" -> database.rml_text,
+      "instance_name" -> database.instance_name,
+      "branch_name" -> database.branch_name
+    )))
   }
 }

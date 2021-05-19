@@ -7,6 +7,11 @@ import play.api.Configuration
 import javax.inject._
 
 trait MappingsDB {
+  var csv_file_path: String = ""
+  var rml_text: String = ""
+  var branch_name: String = ""
+  var instance_name: String = ""
+
   def get_db: Nitrite
 
   def connect_db: Nitrite

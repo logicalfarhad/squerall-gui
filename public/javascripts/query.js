@@ -14,8 +14,9 @@ $(document).ready(function () {
 
 	/* auto-suggest: predicates */
 	function auto_suggest_predicate(selector) {
-		if(selector == "#predicate") {
-			var getPredicates = new Bloodhound({
+		let getPredicates;
+		if(selector === "#predicate") {
+			getPredicates = new Bloodhound({
 				datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
 				queryTokenizer: Bloodhound.tokenizers.whitespace,
 				remote: {
@@ -30,18 +31,18 @@ $(document).ready(function () {
 						})
 					}
 				}
-			})
-		} else if(selector == ".predicate") {
-			var hasPredicate = ""		
-			var getPredicates = new Bloodhound({
+			});
+		} else if(selector === ".predicate") {
+			var hasPredicate = ""
+			getPredicates = new Bloodhound({
 				datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
 				queryTokenizer: Bloodhound.tokenizers.whitespace,
 				remote: {
 					url: '/getPredicates',
 					prepare: function (query, settings) {
 						hasPredicate = '&has=' + encodeURIComponent($("#predicate").val());
-						$(".predicate[placeholder]").not(this).each(function() { // the input copy the autosuggest plugin creates does not have this attribute, so we can filter with it (to avoid selecting the copy)
-							if($(this).val() != query) 
+						$(".predicate[placeholder]").not(this).each(function () { // the input copy the autosuggest plugin creates does not have this attribute, so we can filter with it (to avoid selecting the copy)
+							if ($(this).val() !== query)
 								hasPredicate += '&has=' + encodeURIComponent($(this).val()) // don't send the values of the current .predicate input, it's just string, it doesn't exis in the mappings
 						});
 						settings.url += '?p=' + query;
@@ -56,8 +57,8 @@ $(document).ready(function () {
 							};
 						});
 					}
-				}				
-			})
+				}
+			});
 		}
 
 		$(selector).typeahead(null, {
@@ -119,7 +120,7 @@ $(document).ready(function () {
 	$(document).on("click", ".predicatesGroup", function () {
 		$("#predicatesGroupModal").modal('toggle')
 		var predVar = $(this).data("pred")
-		if(predVar != "") {
+		if(predVar !== "") {
 			$("#subject").val(predVar)	
 		}
 	})
@@ -288,7 +289,7 @@ $(document).ready(function () {
 			var selected_filter = $(this).find(":selected").text()
 			var pred = $(this).attr("id")
 			var filterVal = $("#" + pred + "-filterVar").val().trim()
-			if (filterVal != "")
+			if (filterVal !== "")
 				filters += " && ?" + pred + " " + selected_filter + " " + filterVal
 		})
 
@@ -317,7 +318,7 @@ $(document).ready(function () {
 					var obj = value.toString()
 					aggs += "<div style='border-bottom: solid 1px #d7dadd; padding: 5px;'>"
 					aggs += "<input type='checkbox' class='var-agg' value='" + obj + "-tic' />"
-					options = "<select id='" + obj + "-aggFnc'><option>MAX</option><option>MIN</option><option>SUM</option><option>COUNT</option><option>AVG</option></select>"
+					let options = "<select id='" + obj + "-aggFnc'><option>MAX</option><option>MIN</option><option>SUM</option><option>COUNT</option><option>AVG</option></select>"
 					aggs += "<span>" + options + " (?" + obj + ")</span><br/>"
 					aggs += "GROUP BY "
 					aggs += "<select id='" + obj + "-aggVar'>"
@@ -422,7 +423,7 @@ $(document).ready(function () {
 			var selectedOrder = $("#order-" + ths).children("option:selected").val()
 			orderedVar += " " + selectedOrder + "(?" + ths + ")"
 		})
-		if (orderedVar != "")
+		if (orderedVar !== "")
 			$("#order").html("ORDER BY" + orderedVar).show()
 		$("#orderModal").modal('toggle')
 	})
@@ -447,7 +448,7 @@ $(document).ready(function () {
 	})
 
 	$("body").keyup(function(e) {
-		if (e.keyCode == 13 && e.shiftKey) { // 2: shift & 13: enter
+		if (e.keyCode === 13 && e.shiftKey) { // 2: shift & 13: enter
 			var triple = '\
 			<tr class="pred_obj_tr addedTriple">\
 				<td style="width: 50%;">\

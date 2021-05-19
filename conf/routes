@@ -4,36 +4,40 @@
 # ~~~~
 
 # An example controller showing a sample home page
-GET     /                                    controllers.SquerallController.index()
+GET         /                                    controllers.SquerallController.index()
 
 # Map static resources from the /public folder to the /assets URL path
-GET     /assets/*file                        controllers.Assets.versioned(path="/public", file: Asset)
+GET         /assets/*file                        controllers.Assets.versioned(path="/public", file: Asset)
 
-GET     /squerall                            controllers.SquerallController.index()
+GET         /squerall                            controllers.SquerallController.index()
 
-GET     /squerall/addSource                  controllers.SquerallController.addSource()
+GET         /getAll                              controllers.SquerallController.getAll(branchName:String,instanceName:String)
 
-GET     /squerall/addMappings                controllers.SquerallController.addMappings()
+GET         /getBranchName                       controllers.MappingsController.getBranchName()
 
-GET 	/squerall/addMappings/:entity		 controllers.SquerallController.annotate(entity: String)
+GET         /squerall/addSource                  controllers.SquerallController.addSource()
 
-GET     /squerall/query                  	 controllers.SquerallController.query()
+GET         /squerall/addMappings                controllers.SquerallController.addMappings()
 
-GET     /squerall/insert                     controllers.MappingsController.insert()
+GET         /squerall/addMappings/:entity        controllers.SquerallController.annotate(entity: String)
 
-+nocsrf
-POST    /newMappings                         controllers.AjaxController.newMappings()
+GET         /squerall/query                      controllers.SquerallController.query()
 
-+nocsrf
-POST    /getEmptyOptions                     controllers.AjaxController.getEmptyOptions()
+GET         /squerall/insert                     controllers.MappingsController.insert()
 
 +nocsrf
-POST    /setOptions                          controllers.AjaxController.setOptions()
+POST        /newMappings                         controllers.AjaxController.newMappings()
+
++nocsrf
+POST        /getEmptyOptions                     controllers.AjaxController.getEmptyOptions()
+
++nocsrf
+POST        /setOptions                          controllers.AjaxController.setOptions()
 
 
 +nocsrf
-POST    /generateMappings                    controllers.AjaxController.generateMappings()
+GET        /generateMappings                    controllers.AjaxController.generateMappings()
 
-GET     /getPredicates                       controllers.AjaxController.getPredicates(p, has : Option[Seq[String]])
+GET         /getPredicates                       controllers.AjaxController.getPredicates(p, has : Option[Seq[String]])
 
-GET     /getClasses                          controllers.AjaxController.getClasses(c)
+GET         /getClasses                          controllers.AjaxController.getClasses(c)
