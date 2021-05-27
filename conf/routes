@@ -13,8 +13,6 @@ GET         /squerall                            controllers.SquerallController.
 
 GET         /getAll                              controllers.SquerallController.getAll(branchName:String,instanceName:String)
 
-GET         /getBranchName                       controllers.MappingsController.getBranchName()
-
 GET         /squerall/addSource                  controllers.SquerallController.addSource()
 
 GET         /squerall/addMappings                controllers.SquerallController.addMappings()

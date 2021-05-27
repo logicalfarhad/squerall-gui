@@ -151,7 +151,7 @@ $(document).ready(function(){
 			} else {
 				short_ns = $("#shortns-" + pred).val()
 			
-				if (short_ns == "") {
+				if (short_ns === "") {
 					short_nsEmpty = true
 					alert("Please enter the namespace of the manually entered class/property for the attribute [" + pred + "]. For example: [npg>http://ns.nature.com/terms/date]")
 
@@ -213,7 +213,7 @@ $(document).ready(function(){
 	$("#saveField").click(function() {
 		var newField = $("#newField")
 		var newFieldVal = newField.val()
-		if (newFieldVal != "") {
+		if (newFieldVal !== "") {
 			$("#fieldsTable tr:last").after("<tr><td>" + newFieldVal + "<td><input type='radio' name='pk' id='" + newFieldVal + "'></td><td><input type='text' class='form-control attr' id='" + newFieldVal + "'></td></tr>")
 			newField.val("")
 			$("#fieldAdded").css("color","blue").html("Field: " + newFieldVal + " added! you can add more")

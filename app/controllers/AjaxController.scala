@@ -1,15 +1,15 @@
 package controllers
 
+import org.dizitart.no2.Document
 import org.slf4j.{Logger, LoggerFactory}
 import play.api.Configuration
 import play.api.libs.json._
 import play.api.mvc._
 import services.MappingsDB
 
-import java.io._
+import java.io.File
 import javax.inject._
 import scala.collection.immutable.HashMap
-import scala.io.Source
 
 /**
  * This controller creates an `Action` to handle HTTP requests to the
@@ -50,68 +50,29 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
 
   def setOptions(): Action[Map[String, Seq[String]]] = Action(parse.tolerantFormUrlEncoded) {
     request =>
-      var options: String = request.body.get("options").map(_.head).getOrElse("")
-      val srcType: String = request.body.get("srcType").map(_.head).getOrElse("")
+      val sentity: String = request.body.get("entity").map(_.head).getOrElse("")
+      val stype: String = request.body.get("type").map(_.head).getOrElse("")
+      val source: String = request.body.get("source").map(_.head).getOrElse("")
+      val delimiter: String = request.body.get("options[delimiter]").map(_.head).getOrElse("")
+      val header: String = request.body.get("options[header]").map(_.head).getOrElse("")
+      val mode: String = request.body.get("options[mode]").map(_.head).getOrElse("")
+      val fileexists: Boolean = new File(source).exists()
+      if(fileexists){
+        val collection = database.get_collection("mappings")
 
-      var srcOptsToAppend = ""
-      val sourcesConfFile = playconfiguration.underlying.getString("sourcesConfFile")
+        var mapObj: HashMap[String, String] = HashMap()
+        mapObj += ("delimiter" -> delimiter)
+        mapObj += ("header" -> header)
+        mapObj += ("mode" -> mode)
 
-      val configs = Source.fromFile(sourcesConfFile)
-      var lines_list = try configs.getLines().toList finally configs.close()
-      var commaOrnNot = ""
-      if (lines_list.isEmpty)
-        srcOptsToAppend = srcOptsToAppend + "{\n\t\"sources\": [\n"
-      else {
-        lines_list = lines_list.dropRight(2)
-        commaOrnNot = "\t,"
+        val config = Document.createDocument("config", null)
+        config.put("entity", sentity)
+        config.put("type", stype)
+        config.put("source", source)
+        config.put("options", mapObj)
+        collection.insert(config)
       }
-
-      val pw = new PrintWriter(new File(sourcesConfFile))
-      lines_list.foreach(l => pw.write(l + "\n"))
-
-      // To open the end of the file to new entry
-      options = omit(options, "[[")
-      options = omit(options, "]]")
-      val optionsBits = options.split("],\\[")
-
-      srcOptsToAppend = srcOptsToAppend + commaOrnNot + "\t{"
-      srcOptsToAppend = srcOptsToAppend + "\n\t\t\"type\": \"" + srcType + "\","
-
-      srcOptsToAppend = srcOptsToAppend + "\n\t\t\"options\": {"
-
-      var src = ""
-      var entity = ""
-      var pathFound = false
-
-      optionsBits.zipWithIndex.foreach {
-        case (item, index) =>
-          val kvbits = item.split(",", 2)
-          if (kvbits(0) == "\"path\"") {
-            src = kvbits(1)
-            pathFound = true
-          } else if (kvbits(0) == "\"entity\"") {
-            entity = kvbits(1)
-          } else {
-            srcOptsToAppend = "%s\n\t\t\t%s: %s".format(srcOptsToAppend, kvbits(0), kvbits(1))
-            if (index < optionsBits.length - 1) {
-              srcOptsToAppend = srcOptsToAppend + ","
-            }
-          }
-      }
-      srcOptsToAppend = srcOptsToAppend + "\n\t\t},"
-      if (pathFound)
-        srcOptsToAppend = srcOptsToAppend + "\n\t\t\"source\": " + src + ","
-      else
-        srcOptsToAppend = srcOptsToAppend + "\n\t\t\"source\": " + entity.replaceFirst("\"", "\"//") + "," // When it's not a file, source will be: "//[Entity]" just a randomly-selecte template, can change in the future
-      srcOptsToAppend = srcOptsToAppend + "\n\t\t\"entity\": " + entity
-      srcOptsToAppend = srcOptsToAppend + "\n\t}"
-
-      pw.write(srcOptsToAppend)
-
-      pw.write("\n\t]\n}")
-      pw.close()
-
-      Ok(srcOptsToAppend)
+      Ok(Json.toJson({fileexists}))
   }
 
   def newMappings: Action[Map[String, Seq[String]]] = Action(parse.tolerantFormUrlEncoded) {
@@ -133,6 +94,7 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
       val cursor = database.get_cursor("mappings", Filters.eq("entity", entity))
       var returnMsg = ""
       val collection = database.get_collection("mappings")
+
       if (cursor.size() > 0) {
         collection.remove(Filters.eq("entity", entity))
         returnMsg = "Entity already exists, it has been overwritten"
@@ -148,7 +110,6 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
       prefixMap += ("rdfs" -> "http://www.w3.org/2000/01/rdf-schema#")
       prefixMap += ("xsd" -> "http://www.w3.org/2001/XMLSchema#")
       prefixMap += ("ex" -> "http://example.com/ns#")
-      //  prefixMap += (shortns_clss -> ns_clss)
 
       val mp = JSONstringToMap(mappings)
       mp.foreach {
@@ -261,6 +222,7 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
     val cursor = database.get_cursor("mappings", null)
     var rml = ""
     var allPrefixes: HashMap[String, String] = new HashMap()
+
 
     cursor.forEach(document => {
       val prolog = document.get("prolog").asInstanceOf[HashMap[String, String]]

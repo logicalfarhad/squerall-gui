@@ -1,19 +1,15 @@
 package controllers
 
-import com.datastax.driver.core.Cluster
+import org.dizitart.no2.filters.Filters
 import org.slf4j.{Logger, LoggerFactory}
 import play.api.Configuration
-import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.api.mvc._
 import services.MappingsDB
-
-import java.io.{BufferedReader, InputStreamReader, _}
-import java.net.URI
+import java.io._
 import javax.inject._
 import scala.collection.immutable.HashMap
 import scala.io.Source
-import scala.sys.process._
 
 
 @Singleton
@@ -41,174 +37,39 @@ class SquerallController @Inject()(cc: ControllerComponents, configuration: Conf
   }
 
   def addMappings(): Action[AnyContent] = Action {
-    val configs = Source.fromFile(sourcesConfFile)
-    val data = try configs.mkString finally configs.close()
+    val collection = database.get_collection("mappings")
+    val results = collection.find
     var source_types: Map[String, String] = Map()
-
-    if (data.trim.nonEmpty) {
-      val json: JsValue = Json.parse(data)
-      case class SourceObject(dtype: String, entity: String)
-
-      implicit val userReads: Reads[SourceObject] = (
-        (__ \ Symbol("type")).read[String] and
-          (__ \ Symbol("entity")).read[String]
-        ) (SourceObject)
-
-      val sources = (json \ "sources").as[Seq[SourceObject]]
-
-      for (s <- sources) {
-        source_types = source_types + (s.entity -> s.dtype)
-      }
-    }
-
+    results.forEach(document => {
+      val entity = document.get("entity").toString
+      val stype = document.get("type").toString
+      source_types += (entity -> stype)
+    })
     Ok(views.html.squerall("Add mappings", source_types))
   }
 
   def annotate(entity: String): Action[AnyContent] = Action {
-    import scala.language.postfixOps
-
-    val configs = Source.fromFile(sourcesConfFile)
-
-    val data = try configs.mkString finally configs.close()
-    val json: JsValue = Json.parse(data)
-
-    case class ConfigObject(dtype: String, source: String, options: Map[String, String], entity: String)
-
-    implicit val userReads: Reads[ConfigObject] = (
-      (__ \ Symbol("type")).read[String] and
-        (__ \ Symbol("source")).read[String] and
-        (__ \ Symbol("options")).read[Map[String, String]] and
-        (__ \ Symbol("entity")).read[String]
-      ) (ConfigObject)
-
-    var optionsPerStar: HashMap[String, Map[String, String]] = HashMap()
-
-    val sources = (json \ "sources").as[Seq[ConfigObject]]
-
     var source = ""
     var options: Map[String, String] = Map()
     var dtype = ""
-
-    sources.foreach(s => if (s.entity == entity) {
-      source = s.source
-      options = s.options
-      dtype = s.dtype
-      optionsPerStar += (source -> options)
-    })
-
     var schema = ""
-    var parquet_schema = ""
-
-    if (dtype == "csv") {
-      if (source.contains("hdfs://")) {
-        import org.apache.hadoop.conf.Configuration
-        import org.apache.hadoop.fs.Path
-        import org.apache.hadoop.hdfs.DistributedFileSystem
-
-        val fileSystem = new DistributedFileSystem()
-        val conf = new Configuration()
-        fileSystem.initialize(new URI("hdfs://namenode-host:54310"), conf)
-        val input = fileSystem.open(new Path(source))
-        schema = new BufferedReader(new InputStreamReader(input)).readLine()
-
-      } else {
-        val f = new File(source)
-        schema = firstLine(f).get // in theory, we always have a header
+    val cursor = database.get_cursor("mappings", Filters.eq("entity", entity))
+    var dentity = ""
+    cursor.forEach(doc => {
+      dentity = doc.get("entity").toString //person
+      if (dentity == entity) {
+        dtype = doc.get("type").toString //csv
+        source = doc.get("source").toString //source/path to csv
+        options = doc.get("options").asInstanceOf[HashMap[String, String]] //options
+        schema = firstLine(source).get
       }
-
-    } else if (dtype == "parquet") {
-      val pathToParquetToolsJar = configuration.underlying.getString("pathToParquetToolsJar")
-      parquet_schema = "java -jar " + pathToParquetToolsJar + " schema " + source !!
-
-      parquet_schema = parquet_schema.substring(parquet_schema.indexOf('\n') + 1)
-
-      val set = parquet_schema.split("\n").toSeq.map(_.trim).filter(_ != "}").map(f => f.split(" ")(2))
-
-      for (s <- set) {
-        schema = schema + "," + s.replace(";", "")
-      } // weirdly, there was a ; added from nowhere
-
-      schema = schema.substring(1)
-    } else if (dtype == "cassandra") {
-
-      val table = optionsPerStar(source)("table")
-      val keyspace = optionsPerStar(source)("keyspace")
-
-      var cluster: Cluster = null
-      try {
-        cluster = com.datastax.driver.core.Cluster.builder()
-          .addContactPoint("127.0.0.1")
-          .build()
-
-        val session: com.datastax.driver.core.Session = cluster.connect()
-
-        val rs: com.datastax.driver.core.ResultSet = session.execute("select column_name from system_schema.columns where keyspace_name = '" + keyspace + "' and table_name ='" + table + "'")
-        val it = rs.iterator()
-        while (it.hasNext) {
-          val row = it.next()
-          schema = schema + row.getString("column_name") + ","
-        }
-      } finally {
-        if (cluster != null) cluster.close()
-      }
-    } else if (dtype == "mongodb") {
-      import com.mongodb.MongoClient
-
-      import scala.jdk.CollectionConverters._
-
-      val url = optionsPerStar(source)("url")
-      val db = optionsPerStar(source)("database")
-      val col = optionsPerStar(source)("collection")
-
-      val mongoClient = new MongoClient(url)
-      val database = mongoClient.getDatabase(db)
-      val collection = database.getCollection(col)
-
-      var set = Set[String]()
-      for (cur <- collection.find.limit(100).asScala) {
-        for (x <- cur.asScala) {
-          set = set + x._1
-        }
-      }
-
-      schema = set.mkString(",").replace("_id,", "")
-      mongoClient.close()
-    } else if (dtype == "jdbc") { // TODO: specify later MySQL, SQL Server, etc.
-      import java.sql.{Connection, DriverManager}
-
-      val driver = optionsPerStar(source)("driver")
-      val url = optionsPerStar(source)("url")
-      val username = optionsPerStar(source)("user")
-      val password = optionsPerStar(source)("password")
-      val dbtable = optionsPerStar(source)("dbtable")
-      var connection: Connection = null
-
-      try {
-        // make the connection
-        Class.forName(driver)
-        connection = DriverManager.getConnection(url, username, password)
-
-        // create the statement, and run the select query
-        val statement = connection.createStatement()
-        val resultSet = statement.executeQuery("SHOW COLUMNS FROM " + dbtable)
-        while (resultSet.next()) {
-          val field = resultSet.getString("Field")
-          schema = schema + field + ","
-        }
-      } catch {
-        case e: Throwable => e.printStackTrace()
-      }
-
-      connection.close()
-      schema = omitLastChar(schema)
-    }
-
+    })
     Ok(views.html.squerall1("Annotate source", source, options, dtype, schema, entity))
   }
 
   // helping methods
-  def firstLine(f: File): Option[String] = {
-    val src = Source.fromFile(f)
+  def firstLine(fileSource: String): Option[String] = {
+    val src = Source.fromFile(new File(fileSource))
     try {
       src.getLines().find(_ => true)
     } finally {
@@ -216,11 +77,4 @@ class SquerallController @Inject()(cc: ControllerComponents, configuration: Conf
     }
   }
 
-  def omitLastChar(str: String): String = {
-    var s = ""
-    if (str != null && str.nonEmpty) {
-      s = str.substring(0, str.length() - 1)
-    }
-    s
-  }
 }

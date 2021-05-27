@@ -67,21 +67,37 @@ $(function(){
 		$('.inpts').each(function() {
 		    optMap.set($(this).attr("id").split("-")[1], $(this).val()); // Eliminate 'opt'
 		});
+		optMap.set("type",slctdSrc)
+
+		let config = {
+
+		}
+
+		config.options ={
+
+		}
+		optMap.forEach(function(value, key) {
+			if(key==="type"){
+				config[key] = value
+			}else if(key==="path"){
+				config["source"] = value
+			}
+			else if(key==="entity"){
+				config[key] = value
+			}else {
+				config.options[key]=value
+			}
+		})
 		$.ajax({
 			method: "POST",
 			url: "/setOptions",
-			data: { options: mapToJson(optMap), srcType: slctdSrc },
-	 		dataType: "json",
+			data: config
 		}).done(function(data) {
+			console.log(data)
 			$("#options").html('');	
 		})	
   	})
 })
-
-function mapToJson(map) {
-    return JSON.stringify([...map]);
-}
-
 function pathSwitch(index) {
 	$('input:radio[name="pathWay"]').change(function(){
 		if($(this).attr("id") === 'showHDFSPathInput') {

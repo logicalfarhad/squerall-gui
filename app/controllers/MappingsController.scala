@@ -13,14 +13,12 @@ class MappingsController @Inject()(cc: ControllerComponents, database: MappingsD
 
   def insert: Action[AnyContent] = Action(parse.tolerantFormUrlEncoded) {
     val collection: NitriteCollection = database.get_collection("mappings")
+
     val doc = Document.createDocument("entity", 4)
-      .put("source", 1)
-      .put("ID", 2)
-      .put("class", 3)
+                      .put("source", 1)
+                      .put("ID", 2)
+                      .put("class", 3)
     collection.insert(doc)
     Ok("Document added")
-  }
-  def getBranchName: Action[AnyContent] = Action {
-     NoContent
   }
 }
