@@ -20,6 +20,7 @@ class SquerallController @Inject()(cc: ControllerComponents, configuration: Conf
 
   def index: Action[AnyContent] = Action {
     Ok(views.html.squerall("Home", null))
+      .withSession("connected" -> "user@gmail.com")
   }
 
   def getAll(branchname: String, instanceName: String): Action[AnyContent] = Action {

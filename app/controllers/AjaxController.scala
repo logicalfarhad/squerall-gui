@@ -6,7 +6,6 @@ import play.api.Configuration
 import play.api.libs.json._
 import play.api.mvc._
 import services.MappingsDB
-
 import java.io.File
 import javax.inject._
 import scala.collection.immutable.HashMap
@@ -16,7 +15,7 @@ import scala.collection.immutable.HashMap
  * application's home page.
  */
 @Singleton
-class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Configuration, database: MappingsDB) extends AbstractController(cc) {
+class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) extends AbstractController(cc) {
 
   /**
    * Create an Action to render an HTML page with a welcome message.
@@ -25,28 +24,6 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
    * a path of `/`.
    */
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
-
-  def getEmptyOptions: Action[Map[String, Seq[String]]] = Action(parse.tolerantFormUrlEncoded) {
-    request =>
-      val paramVal: String = request.body.get("dataType").map(_.head).getOrElse("")
-      val response = Json.stringify(getOptions(paramVal))
-      Ok(response)
-  }
-
-  def getOptions(choice: Any): JsObject = choice match {
-    case "csv" =>
-      Json.obj("path" -> Json.arr("", "Location of the file"), "header" -> Json.arr("true", "false", "Specify whether to consider the text header or add a personalized header"), "delimiter" -> Json.arr("", "Delimiter of the columns"), "mode" -> Json.arr("PERMISSIVE", "DROPMALFORMED", "FAILFAST", "Dealing with corrupt records during parsing"))
-    case "parquet" =>
-      Json.obj("path" -> Json.arr("", "Location of the file"), "spark_sql_parquet_filterPushdown" -> Json.arr("true", "false", "Enables Parquet filter push-down optimization when set to true."))
-    case "mongodb" =>
-      Json.obj("url" -> Json.arr("", ""), "database" -> Json.arr("", ""), "collection" -> Json.arr("", ""))
-    case "cassandra" =>
-      Json.obj("keyspace" -> Json.arr("", ""), "table" -> Json.arr("", ""))
-    case "jdbc" =>
-      Json.obj("url" -> Json.arr("", ""), "driver" -> Json.arr("", ""), "dbtable" -> Json.arr("", ""), "user" -> Json.arr("", ""), "password" -> Json.arr("", ""))
-    case _ =>
-      Json.obj("more" -> "to come")
-  }
 
   def setOptions(): Action[Map[String, Seq[String]]] = Action(parse.tolerantFormUrlEncoded) {
     request =>
@@ -57,22 +34,30 @@ class AjaxController @Inject()(cc: ControllerComponents, playconfiguration: Conf
       val header: String = request.body.get("options[header]").map(_.head).getOrElse("")
       val mode: String = request.body.get("options[mode]").map(_.head).getOrElse("")
       val fileexists: Boolean = new File(source).exists()
-      if(fileexists){
-        val collection = database.get_collection("mappings")
+      val collection = database.get_collection("mappings")
+      request.session
+        .get("connected")
+        .map { _ =>
+          if(fileexists){
+            var mapObj: HashMap[String, String] = HashMap()
+            mapObj += ("delimiter" -> delimiter)
+            mapObj += ("header" -> header)
+            mapObj += ("mode" -> mode)
 
-        var mapObj: HashMap[String, String] = HashMap()
-        mapObj += ("delimiter" -> delimiter)
-        mapObj += ("header" -> header)
-        mapObj += ("mode" -> mode)
+            val config = Document.createDocument("config", null)
+            config.put("entity", sentity)
+            config.put("type", stype)
+            config.put("source", source)
+            config.put("options", mapObj)
+            collection.insert(config)
+          }
+          Ok(Json.toJson({fileexists}))
+        }.getOrElse {
 
-        val config = Document.createDocument("config", null)
-        config.put("entity", sentity)
-        config.put("type", stype)
-        config.put("source", source)
-        config.put("options", mapObj)
-        collection.insert(config)
-      }
-      Ok(Json.toJson({fileexists}))
+        import org.dizitart.no2.filters.Filters
+        collection.remove(Filters.ALL)
+          Unauthorized("Oops, you are not connected")
+        }
   }
 
   def newMappings: Action[Map[String, Seq[String]]] = Action(parse.tolerantFormUrlEncoded) {

@@ -26,8 +26,6 @@ GET         /squerall/insert                     controllers.MappingsController.
 +nocsrf
 POST        /newMappings                         controllers.AjaxController.newMappings()
 
-+nocsrf
-POST        /getEmptyOptions                     controllers.AjaxController.getEmptyOptions()
 
 +nocsrf
 POST        /setOptions                          controllers.AjaxController.setOptions()

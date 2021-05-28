@@ -211,8 +211,8 @@ $(document).ready(function(){
 	})
 
 	$("#saveField").click(function() {
-		var newField = $("#newField")
-		var newFieldVal = newField.val()
+		let newField = $("#newField")
+		let newFieldVal = newField.val()
 		if (newFieldVal !== "") {
 			$("#fieldsTable tr:last").after("<tr><td>" + newFieldVal + "<td><input type='radio' name='pk' id='" + newFieldVal + "'></td><td><input type='text' class='form-control attr' id='" + newFieldVal + "'></td></tr>")
 			newField.val("")
