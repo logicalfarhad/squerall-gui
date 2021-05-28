@@ -8,23 +8,17 @@ $(function () {
         header: ["true", "false", "Specify whether to consider the text header or add a personalized header"],
         delimiter: ["", "Delimiter of the columns"],
         mode: ["PERMISSIVE", "DROPMALFORMED", "FAILFAST", "Dealing with corrupt records during parsing"]
-    })
-
-    datasource.set("parquet",{
+    }).set("parquet",{
             path: ["", "Location of the file"],
             spark_sql_parquet_filterPushdown: ["true", "false", "Enables Parquet filter push-down optimization when set to true."]
-        })
-    datasource.set("mongodb",{
+    }).set("mongodb",{
             url: ["", ""],
             database: ["", ""],
             collection: ["", ""]
-        })
-    datasource.set("cassandra",{
+    }).set("cassandra",{
         keyspace: ["", ""],
         table: ["", ""]
-    })
-
-    datasource.set("jdbc",{
+    }).set("jdbc",{
         url: ["", ""],
         driver: ["", ""],
         dbtable:["",""],
