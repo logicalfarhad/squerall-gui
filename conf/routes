@@ -21,8 +21,6 @@ GET         /squerall/addMappings/:entity        controllers.SquerallController.
 
 GET         /squerall/query                      controllers.SquerallController.query()
 
-GET         /squerall/insert                     controllers.MappingsController.insert()
-
 +nocsrf
 POST        /newMappings                         controllers.AjaxController.newMappings()
 

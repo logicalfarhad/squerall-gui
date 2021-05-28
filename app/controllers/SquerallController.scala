@@ -13,10 +13,9 @@ import scala.io.Source
 
 
 @Singleton
-class SquerallController @Inject()(cc: ControllerComponents, configuration: Configuration, database: MappingsDB) extends AbstractController(cc) {
+class SquerallController @Inject()(cc: ControllerComponents, database: MappingsDB) extends AbstractController(cc) {
 
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
-  val sourcesConfFile: String = configuration.underlying.getString("sourcesConfFile")
 
   def index: Action[AnyContent] = Action {
     Ok(views.html.squerall("Home", null))
