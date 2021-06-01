@@ -1,3 +1,4 @@
+@import views.html.helper.style
 @(message: String, data: Map[String,String])
 
 @if(message=="Home") {
@@ -26,4 +27,9 @@
     }
 	<script src="@routes.Assets.versioned("javascripts/typeahead.bundle.min.js")"></script>
     <script src="@routes.Assets.versioned("javascripts/query.js")"></script> 
-}
+}else if(message=="Session Timeout"){
+    @html("Squerall - Timeout") {
+        @sessiontimeout(message,style="scala")
+    }
+    }
+

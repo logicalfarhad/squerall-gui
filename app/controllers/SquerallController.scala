@@ -1,18 +1,17 @@
 package controllers
 
 import org.mongodb.scala.model.Filters.equal
-import org.mongodb.scala.{Document, MongoClient, MongoCollection, MongoDatabase}
+import org.mongodb.scala.{Document, MongoCollection}
 import org.slf4j.{Logger, LoggerFactory}
 import play.api.libs.json._
 import play.api.mvc._
 import services.Helpers.GenericObservable
 import services.MappingsDB
-
 import java.io._
 import java.util.UUID
 import javax.inject._
+import scala.concurrent.Future
 import scala.io.Source
-
 
 @Singleton
 class SquerallController @Inject()(cc: ControllerComponents, database: MappingsDB) extends AbstractController(cc) {
@@ -21,7 +20,7 @@ class SquerallController @Inject()(cc: ControllerComponents, database: MappingsD
   val mongoCollection: MongoCollection[Document] = database.get_mongo_db_collection("mongocollection")
 
   def index: Action[AnyContent] = Action {
-    Ok(views.html.squerall("Home", null)).withSession("connected" -> UUID.randomUUID().toString)
+    Ok(views.html.squerall("Home", null)).withSession("session" ->UUID.randomUUID().toString)
   }
 
   def getAll(branchname: String, instanceName: String): Action[AnyContent] = Action {
@@ -34,19 +33,30 @@ class SquerallController @Inject()(cc: ControllerComponents, database: MappingsD
     Ok(views.html.squerall("Query", null))
   }
 
-  def addSource(): Action[AnyContent] = Action {
-    Ok(views.html.squerall("Add source", null))
+  def addSource(): Action[AnyContent] = Action{ implicit request=>
+    val session = request.session.get("session")
+    if(session.isDefined){
+     Ok(views.html.squerall("Add source", null))
+    }else{
+      Ok(views.html.squerall("Session Timeout", null))
+    }
   }
 
-  def addMappings(): Action[AnyContent] = Action { implicit request =>{
+  def addMappings(): Action[AnyContent] = Action.async { implicit request =>{
     var source_types: Map[String, String] = Map()
-    mongoCollection.find().first()
-      .map(d => {
-        val entity = d.getString("entity")
-        val stype = d.getString("type")
-        source_types += (entity -> stype)
-      }).printHeadResult()
-    Ok(views.html.squerall("Add mappings", source_types))
+    val session = request.session.get("session")
+    if(session.isDefined) {
+      mongoCollection.find()
+        .map(d => {
+          val entity = d.getString("entity")
+          val stype = d.getString("type")
+          source_types += (entity -> stype)
+        }).printResults("got documents")
+      Future.successful(Ok(views.html.squerall("Add mappings", source_types)))
+    }else{
+      mongoCollection.drop().printResults("all documents deleted")
+      Future.successful(Ok(views.html.squerall("Session Timeout", null)))
+    }
   }}
   def annotate(entity: String): Action[AnyContent] = Action{ implicit request =>{
     var source = ""
@@ -55,9 +65,6 @@ class SquerallController @Inject()(cc: ControllerComponents, database: MappingsD
     var schema = ""
     var dentity = ""
 
-    if(1+1==2){
-      Ok("")
-    }
     mongoCollection.find(equal("entity",entity)).first()
       .map(doc => {
         dentity = doc.getString("entity")

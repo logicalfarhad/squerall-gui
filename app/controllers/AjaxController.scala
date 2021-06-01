@@ -2,7 +2,7 @@ package controllers
 
 import org.mongodb.scala.bson.BsonValue
 import org.mongodb.scala.model.Filters.equal
-import org.mongodb.scala.{Document, MongoClient, MongoCollection, MongoDatabase}
+import org.mongodb.scala.{Document, MongoCollection}
 import org.slf4j.{Logger, LoggerFactory}
 import play.api.libs.json._
 import play.api.mvc._
@@ -12,97 +12,106 @@ import services.MappingsDB
 import java.io.File
 import javax.inject._
 import scala.collection.immutable.HashMap
+import scala.concurrent.Future
 
 @Singleton
 class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) extends AbstractController(cc) {
+
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
   val mongoCollection: MongoCollection[Document] = database.get_mongo_db_collection("mongocollection")
-  def setOptions(): Action[Map[String, Seq[String]]] = Action(parse.tolerantFormUrlEncoded) { implicit request =>
-      val sentity: String = request.body.get("entity").map(_.head).getOrElse("")
-      val stype: String = request.body.get("type").map(_.head).getOrElse("")
-      val source: String = request.body.get("source").map(_.head).getOrElse("")
-      val delimiter: String = request.body.get("options[delimiter]").map(_.head).getOrElse("")
-      val header: String = request.body.get("options[header]").map(_.head).getOrElse("")
-      val mode: String = request.body.get("options[mode]").map(_.head).getOrElse("")
-      val fileexists: Boolean = new File(source).exists()
-          if (fileexists) {
-            var mapObj: HashMap[String, String] = HashMap()
-            mapObj += ("delimiter" -> delimiter)
-            mapObj += ("header" -> header)
-            mapObj += ("mode" -> mode)
-            val doc: Document = Document("entity" -> sentity,
-              "type" -> stype,
-              "source" -> source,
-              "options" -> Document("delimiter" -> delimiter,
-                "header" -> header,
-                "mode" -> mode))
-            mongoCollection.insertOne(doc).results()
-          }
-          Ok(Json.toJson({fileexists}))
+
+  def setOptions(): Action[Map[String, Seq[String]]] = Action.async(parse.tolerantFormUrlEncoded) { implicit request =>
+    val sentity: String = request.body.get("entity").map(_.head).getOrElse("")
+    val stype: String = request.body.get("type").map(_.head).getOrElse("")
+    val source: String = request.body.get("source").map(_.head).getOrElse("")
+    val delimiter: String = request.body.get("options[delimiter]").map(_.head).getOrElse("")
+    val header: String = request.body.get("options[header]").map(_.head).getOrElse("")
+    val mode: String = request.body.get("options[mode]").map(_.head).getOrElse("")
+    val file_exists: Boolean = new File(source).exists()
+    val session = request.session.get("session")
+    if (session.isDefined) {
+      if (file_exists) {
+        var mapObj: HashMap[String, String] = HashMap()
+        mapObj += ("delimiter" -> delimiter)
+        mapObj += ("header" -> header)
+        mapObj += ("mode" -> mode)
+        val doc: Document = Document("entity" -> sentity,
+          "type" -> stype,
+          "source" -> source,
+          "options" -> Document("delimiter" -> delimiter,
+            "header" -> header,
+            "mode" -> mode))
+        mongoCollection.insertOne(doc).results()
       }
+      Future.successful(Ok(Json.toJson({
+        file_exists
+      })))
+    } else {
+     Future.successful(Redirect(routes.SquerallController.index()))
+    }
+  }
 
   def newMappings: Action[Map[String, Seq[String]]] = Action(parse.tolerantFormUrlEncoded) { implicit request =>
-      request.session.get("user").get
-      val mappings: String = request.body.get("mappings").map(_.head).getOrElse("")
-      val pk: String = request.body.get("pk").map(_.head).getOrElse("")
-      val clss: String = request.body.get("clss").map(_.head).getOrElse("")
-      val shortns_clss: String = request.body.get("shortns_clss").map(_.head).getOrElse("")
-      val ns_clss: String = request.body.get("ns_clss").map(_.head).getOrElse("")
-      val entity: String = request.body.get("entity").map(_.head).getOrElse("")
-      val src: String = request.body.get("src").map(_.head).getOrElse("")
-      val dtype: String = request.body.get("dtype").map(_.head).getOrElse("")
+    val mappings: String = request.body.get("mappings").map(_.head).getOrElse("")
+    val pk: String = request.body.get("pk").map(_.head).getOrElse("")
+    val clss: String = request.body.get("clss").map(_.head).getOrElse("")
+    val shortns_clss: String = request.body.get("shortns_clss").map(_.head).getOrElse("")
+    val ns_clss: String = request.body.get("ns_clss").map(_.head).getOrElse("")
+    val entity: String = request.body.get("entity").map(_.head).getOrElse("")
+    val src: String = request.body.get("src").map(_.head).getOrElse("")
+    val dtype: String = request.body.get("dtype").map(_.head).getOrElse("")
 
-      var propertiesMap = Document()
-      var returnMsg = ""
+    var propertiesMap = Document()
+    var returnMsg = ""
 
-      mongoCollection.find(equal("entity", entity)).first().map(x => {
-        returnMsg = "Entity added"
-        println(x.get("entity").get.asString().getValue)
-      }).printHeadResult("Entry added")
+    mongoCollection.find(equal("entity", entity)).first().map(x => {
+      returnMsg = "Entity added"
+      println(x.get("entity").get.asString().getValue)
+    }).printHeadResult("Entry added")
 
-      var prefixMap = Document()
-      prefixMap += ("rr" -> "http://www.w3.org/ns/r2rml#")
-      prefixMap += ("rml" -> "http://semweb.mmlab.be/ns/rml#")
-      prefixMap += ("ql" -> "http://semweb.mmlab.be/ns/ql#")
-      prefixMap += ("ex" -> "http://example.com/ns#")
-      prefixMap += ("rdf" -> "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
-      prefixMap += ("rdfs" -> "http://www.w3.org/2000/01/rdf-schema#")
-      prefixMap += ("xsd" -> "http://www.w3.org/2001/XMLSchema#")
-      prefixMap += ("ex" -> "http://example.com/ns#")
+    var prefixMap = Document()
+    prefixMap += ("rr" -> "http://www.w3.org/ns/r2rml#")
+    prefixMap += ("rml" -> "http://semweb.mmlab.be/ns/rml#")
+    prefixMap += ("ql" -> "http://semweb.mmlab.be/ns/ql#")
+    prefixMap += ("ex" -> "http://example.com/ns#")
+    prefixMap += ("rdf" -> "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+    prefixMap += ("rdfs" -> "http://www.w3.org/2000/01/rdf-schema#")
+    prefixMap += ("xsd" -> "http://www.w3.org/2001/XMLSchema#")
+    prefixMap += ("ex" -> "http://example.com/ns#")
 
-      val mp = JSONstringToMap(mappings)
-      mp.foreach {
-        case (k, v) =>
-          if (pk != k.replace("\"", "")) {
-            val vbits = v.replace("\"", "").split("___") // eg. gd___http://purl.org/goodrelations/v1#legalName
-            val short_ns = vbits(0) // eg. gd
-            val pred_url = vbits(1) // eg. http://purl.org/goodrelations/v1#legalName
-            val pred_url_bits = v.replace("#", "/").split("/")
-            val pred = pred_url_bits(pred_url_bits.length - 1).replace("\"", "") // eg. legalName
-            val ns = pred_url.replace(pred, "") // eg. http://purl.org/goodrelations/v1#
+    val mp = JSONstringToMap(mappings)
+    mp.foreach {
+      case (k, v) =>
+        if (pk != k.replace("\"", "")) {
+          val vbits = v.replace("\"", "").split("___") // eg. gd___http://purl.org/goodrelations/v1#legalName
+          val short_ns = vbits(0) // eg. gd
+          val pred_url = vbits(1) // eg. http://purl.org/goodrelations/v1#legalName
+          val pred_url_bits = v.replace("#", "/").split("/")
+          val pred = pred_url_bits(pred_url_bits.length - 1).replace("\"", "") // eg. legalName
+          val ns = pred_url.replace(pred, "") // eg. http://purl.org/goodrelations/v1#
 
-            propertiesMap += (short_ns + ":" + pred -> k)
-            prefixMap += (short_ns.replace("\"", "") -> ns)
-          }
-      }
+          propertiesMap += (short_ns + ":" + pred -> k)
+          prefixMap += (short_ns.replace("\"", "") -> ns)
+        }
+    }
 
-      var document = Document()
+    var document = Document()
 
-      document += ("type" -> dtype)
-      document += ("source" -> src)
-      document += ("prolog" -> prefixMap)
-      document += ("propertiesMap" -> propertiesMap)
-      if (dtype == "mongodb")
-        document += ("ID" -> "_id")
-      else
-        document += ("ID" -> pk.replace("\"", ""))
-      if (clss != "")
-        document += ("class" -> (shortns_clss + ":" + clss.replace(ns_clss, "")))
+    document += ("type" -> dtype)
+    document += ("source" -> src)
+    document += ("prolog" -> prefixMap)
+    document += ("propertiesMap" -> propertiesMap)
+    if (dtype == "mongodb")
+      document += ("ID" -> "_id")
+    else
+      document += ("ID" -> pk.replace("\"", ""))
+    if (clss != "")
+      document += ("class" -> (shortns_clss + ":" + clss.replace(ns_clss, "")))
 
-      val mod = Document("$set" -> document)
-      mongoCollection.updateOne(equal("entity", entity), mod)
-        .printHeadResult("Update Result")
-      Ok(Json.stringify(Json.toJson(returnMsg)))
+    val mod = Document("$set" -> document)
+    mongoCollection.updateOne(equal("entity", entity), mod)
+      .printHeadResult("Update Result")
+    Ok(Json.stringify(Json.toJson(returnMsg)))
   }
 
   // Helping methods
