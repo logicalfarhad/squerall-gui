@@ -5,7 +5,7 @@ $(function () {
             mp = data;
             $(`#mappings-box`).show()
             $("#exportMappings").show()
-            $("#mappings-box").html(mp.rml_text.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, "<br/>").replace(/\s/g, '&nbsp;&nbsp;&nbsp;'))
+            $("#mappings-box").html(mp.rml_text)
             $("#exportMappings").html("<br/><button type='button' class='btn btn-primary' id='saveMappings' style='margin-bottom: 10px;'>Export mappings</button>")
         })
     });

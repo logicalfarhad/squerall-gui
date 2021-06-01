@@ -1,8 +1,10 @@
 package services
 
 import org.dizitart.no2.{Cursor, Filter, Nitrite, NitriteCollection}
+import org.mongodb.scala.{Document, MongoClient, MongoCollection, MongoDatabase}
 import org.slf4j.{Logger, LoggerFactory}
 import play.api.Configuration
+
 import javax.inject._
 
 trait MappingsDB {
@@ -15,8 +17,9 @@ trait MappingsDB {
 
   def connect_db: Nitrite
 
+  def get_mongo_client:MongoClient
   def get_cursor(name: String, filter: Filter): Cursor
-
+  def get_mongo_db_collection(name:String):MongoCollection[Document]
   def get_collection(name: String): NitriteCollection
 }
 
@@ -25,7 +28,6 @@ class MappingsDBInstance @Inject()(configuration: Configuration) extends Mapping
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
   logger.info(s"MappingsDB: Starting a database connection.")
   var db: Nitrite = _
-
   override def get_db: Nitrite = {
     db
   }
@@ -49,5 +51,14 @@ class MappingsDBInstance @Inject()(configuration: Configuration) extends Mapping
         .openOrCreate()
     }
     db
+  }
+
+  override def get_mongo_db_collection(name: String): MongoCollection[Document] = {
+    val mongodb = get_mongo_client.getDatabase("test")
+    mongodb.getCollection("name")
+  }
+
+  override def get_mongo_client: MongoClient = {
+    MongoClient("mongodb://127.0.0.1:27017")
   }
 }

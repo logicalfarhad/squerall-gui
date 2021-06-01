@@ -1,34 +1,43 @@
-@(message: String, style: String = "scala") 
+@(message: String, style: String = "scala")
 
 @defining(play.core.PlayVersion.current) { version =>
 
 <div class="alert alert-info" role="alert" style="margin-top: 20px;">
-	Build your query by 'gradually' entering entities and links between entities. For example an entity for "<b>Product</b>" followed by an entity for "<b>Producer</b>" then link them.
+    Build your query by 'gradually' entering entities and links between entities. For example an entity for
+    "<b>Product</b>" followed by an entity for "<b>Producer</b>" then link them.
 </div>
 
 <div class="rounded">
-	<button type="button" class="btn btn-primary predicatesGroup" style="margin: 3px;" data-pred="">Click</button> to add entities and link between them... <br/>
-	<button type="button" class="btn btn-success disabled" style="margin: 3px;" id="addSelect">Click</button> to add which properties you want to see in the results...<br/>
-    <button type="button" class="btn btn-danger disabled" style="margin: 3px;" id="addFilters">Click</button> to filter the property values of the results... <br/>
-    <button type="button" class="btn btn-info disabled" style="margin: 3px;" id="addAggregations">Click</button> to calculate aggregated values... <br/>
-    <button type="button" class="btn btn-warning disabled" style="margin: 3px;" id="addOrder">Click</button> to order the results by propery values... <br/>
-    <button type="button" class="btn btn-light disabled" style="margin: 3px;" id="addLimit">Click</button> to limit the number of results... <br/>
-	<button type="button" class="btn btn-secondary disabled" style="margin: 3px;" id="addTransform">Click</button> to include transformation on joins between entitities.
+    <button type="button" class="btn btn-primary predicatesGroup" style="margin: 3px;" data-pred="">Click</button> to
+    add entities and link between them... <br />
+    <button type="button" class="btn btn-success disabled" style="margin: 3px;" id="addSelect">Click</button> to add
+    which properties you want to see in the results...<br />
+    <button type="button" class="btn btn-danger disabled" style="margin: 3px;" id="addFilters">Click</button> to filter
+    the property values of the results... <br />
+    <button type="button" class="btn btn-info disabled" style="margin: 3px;" id="addAggregations">Click</button> to
+    calculate aggregated values... <br />
+    <button type="button" class="btn btn-warning disabled" style="margin: 3px;" id="addOrder">Click</button> to order
+    the results by propery values... <br />
+    <button type="button" class="btn btn-light disabled" style="margin: 3px;" id="addLimit">Click</button> to limit the
+    number of results... <br />
+    <button type="button" class="btn btn-secondary disabled" style="margin: 3px;" id="addTransform">Click</button> to
+    include transformation on joins between entities.
 
     <div style="margin-top: 20px;">
         <h4>Generated SPARQL query</h4>
         <div id="sparql" style="background-color: #eaf2f9; padding: 20px;">
             <div id="prolog" style="display: none;"></div>
-            <div id="select" style="display: none;">SELECT <span id="selected-vars"></span><span id="agg-fnc"></span></div>
+            <div id="select" style="display: none;">SELECT <span id="selected-vars"></span><span id="agg-fnc"></span>
+            </div>
             <div id="where" style="display: none;">
                 WHERE { <span id="triple-patterns"></span> <br />
-                    <div id="filter" style="display: none;">
-                        FILTER (<span id="filter-conditions"></span>) .
-                    </div>
-                    <div id="transform" style="display: none;">
-                        TRANSFORM (<span id="transforms"></span>)
-                    </div>                              
-                }            
+                <div id="filter" style="display: none;">
+                    FILTER (<span id="filter-conditions"></span>) .
+                </div>
+                <div id="transform" style="display: none;">
+                    TRANSFORM (<span id="transforms"></span>)
+                </div>
+                }
             </div>
             <div id="agg-vars"></div>
             <div id="order"></div>
@@ -43,175 +52,169 @@
 </div>
 
 <!-- Modals -->
-<div class="modal fade" id="predicatesGroupModal" tabindex="-1" role="dialog" aria-labelledby="SPARQL BGP" aria-hidden="true">
-	<div class="modal-dialog modal-lg" role="document">
+<div class="modal fade" id="predicatesGroupModal" tabindex="-1" role="dialog" aria-labelledby="SPARQL BGP"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="sourceModalLabel">Add predicates</h5>
-				<input type='hidden' id='slctdSrc' />
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
+                <input type='hidden' id='slctdSrc' />
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
                 </button>
             </div>
             <div class="modal-body">
-                <label for="subject">Subject variable: <input style="width: 50%;" type="text" name="subject" class="form-control noborder" id="subject" ></label><br/>
-                <label for="subject">Entity type: <input type="text" name="clss" class="form-control noborder" id="clss" ></label><br/>
-                <span>Enter predicates, press left shift+enter more:</span>													
-				<table id="triplesTable" style="width: 100%;">
-					<tr class="pred_obj_tr">
-						<td style="width: 50%;"><input type="text" class="form-control noborder hasPredicate" id="predicate" placeholder="predicate" ></td>
-						<td style="width: 50%;"><input type="text" class="form-control noborder" id="object" placeholder='object (enter ?variable)'></td>								
-					</tr>
-				</table>
-				
+                <label for="subject">Subject variable: <input style="width: 50%;" type="text" name="subject"
+                        class="form-control noborder" id="subject"></label><br />
+                <label for="subject">Entity type: <input type="text" name="clss" class="form-control noborder"
+                        id="clss"></label><br />
+                <span>Enter predicates, press left shift+enter more:</span>
+                <table id="triplesTable" style="width: 100%;">
+                    <tr class="pred_obj_tr">
+                        <td style="width: 50%;"><input type="text" class="form-control noborder hasPredicate"
+                                id="predicate" placeholder="predicate"></td>
+                        <td style="width: 50%;"><input type="text" class="form-control noborder" id="object"
+                                placeholder='object (enter ?variable)'></td>
+                    </tr>
+                </table>
+
             </div>
             <div class="modal-footer">
-				<span role="alert" id="fieldAdded"></span>
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="saveTriple">Add</button>				
+                <span role="alert" id="fieldAdded"></span>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveTriple">Add</button>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="selectModal" tabindex="-1" role="dialog" aria-labelledby="SPARQL Selects" aria-hidden="true">
-	<div class="modal-dialog modal-sm" role="document">
+<div class="modal fade" id="selectModal" tabindex="-1" role="dialog" aria-labelledby="SPARQL Selects"
+    aria-hidden="true">
+    <div class="modal-dialog modal-sm" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="sourceModalLabel">Add select</h5>
-				<input type='hidden' id='slctdSrc' />
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
+                <input type='hidden' id='slctdSrc' />
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
                 </button>
             </div>
             <div class="modal-body">
-				<div id="selectableVars">Add predicates first</div>
+                <div id="selectableVars">Add predicates first</div>
             </div>
             <div class="modal-footer">
-				<span role="alert" id="fieldAdded"></span>
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="saveSelect">Save</button>				
+                <span role="alert" id="fieldAdded"></span>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveSelect">Save</button>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="filtersModal" tabindex="-1" role="dialog" aria-labelledby="SPARQL Filters" aria-hidden="true">
-	<div class="modal-dialog modal-sm" role="document">
+<div class="modal fade" id="filtersModal" tabindex="-1" role="dialog" aria-labelledby="SPARQL Filters"
+    aria-hidden="true">
+    <div class="modal-dialog modal-sm" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="sourceModalLabel">Add filters</h5>
-				<input type='hidden' id='slctdSrc' />
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
+                <input type='hidden' id='slctdSrc' />
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
                 </button>
             </div>
             <div class="modal-body">
-				<div id="filters">Add predicates first</div>
+                <div id="filters">Add predicates first</div>
             </div>
             <div class="modal-footer">
-				<span role="alert" id="fieldAdded"></span>
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="saveFilters">Save</button>				
+                <span role="alert" id="fieldAdded"></span>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveFilters">Save</button>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="aggregationsModal" tabindex="-1" role="dialog" aria-labelledby="SPARQL Aggregations" aria-hidden="true">
-	<div class="modal-dialog modal-sm" role="document">
+<div class="modal fade" id="aggregationsModal" tabindex="-1" role="dialog" aria-labelledby="SPARQL Aggregations"
+    aria-hidden="true">
+    <div class="modal-dialog modal-sm" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="sourceModalLabel">Add aggregations</h5>
-				<input type='hidden' id='slctdSrc' />
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
+                <input type='hidden' id='slctdSrc' />
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
                 </button>
             </div>
             <div class="modal-body">
-				<div id="aggs">Add predicates first</div>
+                <div id="aggs">Add predicates first</div>
             </div>
             <div class="modal-footer">
-				<span role="alert" id="fieldAdded"></span>
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="saveAggregations">Save</button>				
+                <span role="alert" id="fieldAdded"></span>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveAggregations">Save</button>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="transformModal" tabindex="-1" role="dialog" aria-labelledby="SPARQL Transformations" aria-hidden="true">
-	<div class="modal-dialog modal-sm" role="document">
+<div class="modal fade" id="transformModal" tabindex="-1" role="dialog" aria-labelledby="SPARQL Transformations"
+    aria-hidden="true">
+    <div class="modal-dialog modal-sm" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="sourceModalLabel">Add transformations</h5>
-				<input type='hidden' id='slctdSrc' />
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
+                <input type='hidden' id='slctdSrc' />
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
                 </button>
             </div>
             <div class="modal-body">
-				<div id="transformations">Add predicates first</div>
+                <div id="transformations">Add predicates first</div>
             </div>
             <div class="modal-footer">
-				<span role="alert" id="fieldAdded"></span>
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="saveTransform">Save</button>				
+                <span role="alert" id="fieldAdded"></span>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveTransform">Save</button>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="orderModal" tabindex="-1" role="dialog" aria-labelledby="SPARQL Ordering" aria-hidden="true">
-	<div class="modal-dialog modal-sm" role="document">
+<div class="modal fade" id="orderModal" tabindex="-1" role="dialog" aria-labelledby="SPARQL Ordering"
+    aria-hidden="true">
+    <div class="modal-dialog modal-sm" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="sourceModalLabel">Set results limits</h5>
-				<input type='hidden' id='slctdSrc' />
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
+                <input type='hidden' id='slctdSrc' />
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
                 </button>
             </div>
             <div class="modal-body">
-				<div id="orders">Add predicates first</div>
+                <div id="orders">Add predicates first</div>
             </div>
             <div class="modal-footer">
-				<span role="alert" id="fieldAdded"></span>
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="saveOrder">Save</button>				
+                <span role="alert" id="fieldAdded"></span>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveOrder">Save</button>
             </div>
         </div>
     </div>
 </div>
 
 <div class="modal fade" id="limitModal" tabindex="-1" role="dialog" aria-labelledby="SPARQL Filters" aria-hidden="true">
-	<div class="modal-dialog modal-sm" role="document">
+    <div class="modal-dialog modal-sm" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="sourceModalLabel">Add order</h5>
-				<input type='hidden' id='slctdSrc' />
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
+                <input type='hidden' id='slctdSrc' />
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
                 </button>
             </div>
             <div class="modal-body">
-				<div id="lmt">Add predicates first</div>
+                <div id="lmt">Add predicates first</div>
             </div>
             <div class="modal-footer">
-				<span role="alert" id="fieldAdded"></span>
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="saveLimit">Save</button>				
+                <span role="alert" id="fieldAdded"></span>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveLimit">Save</button>
             </div>
         </div>
     </div>
 </div>
-
-<style>
-	.noborder {
-		border-color: #d0d6db;
-	}
-	.meduim {
-		width: px;
-	}
-</style>
 }

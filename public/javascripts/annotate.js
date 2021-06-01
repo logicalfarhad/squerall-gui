@@ -127,7 +127,7 @@ $(document).ready(function(){
 	}
 
 	$('input[name=pk]').change(function() {
-		var radio = $(this).val()
+		let radio = $(this).val()
 		
 		$("#" + radio).val("")
 		$("#ns-" + radio).html("")
@@ -150,7 +150,6 @@ $(document).ready(function(){
 				mapping = bits[1]
 			} else {
 				short_ns = $("#shortns-" + pred).val()
-			
 				if (short_ns === "") {
 					short_nsEmpty = true
 					alert("Please enter the namespace of the manually entered class/property for the attribute [" + pred + "]. For example: [npg>http://ns.nature.com/terms/date]")
@@ -163,34 +162,41 @@ $(document).ready(function(){
 			map.set(pred, short_ns + "___" + mapping)			
 		})
 
-		var pk = $('input[name=pk]:checked').val()
-		var dtype = $("#dtype").val()
-		var clss = $("#clss").val()
-		var shortns_clss = ""
-		var ns_clss = ""
+		let pk = $('input[name=pk]:checked').val()
+		let dtype = $("#dtype").val()
+		let clss = $("#clss").val()
+		let shortns_clss = ""
+		let ns_clss = ""
 		if (clss.includes(">")) { // abc>http://example.com/ns/Product => personalized URI
-			var bits = clss.split(">")
+			let bits = clss.split(">")
 			shortns_clss = bits[0]
 			clss = bits[1]
-			var tmp = clss.includes("#") ? clss.lastIndexOf('#') : clss.lastIndexOf('/')
+			let tmp = clss.includes("#") ? clss.lastIndexOf('#') : clss.lastIndexOf('/')
 			ns_clss = clss.substring(0, tmp + 1) // +1 to include the last '/'
 		} else {
 			shortns_clss = $("#shortns_clss").val()
 			ns_clss = $("#ns_clss").val()
 		}
 		
-		var src = $("#src").val()
-		var entity = $("#entity").val()
+		let src = $("#src").val()
+		let entity = $("#entity").val()
 
 		if (!short_nsEmpty) {
 			$(".attr").css("background-color","#fff")
 			$.ajax({
 				method: "POST",
 				url: "/newMappings",
-				data: { mappings: mapToJson(map), pk: pk, dtype: dtype, clss: clss, ns_clss: ns_clss, shortns_clss: shortns_clss, src: src, entity: entity},
+				data: { mappings: mapToJson(map),
+					pk: pk,
+					dtype: dtype,
+					clss: clss,
+					ns_clss: ns_clss,
+					shortns_clss: shortns_clss,
+					src: src,
+					entity: entity},
 				dataType: "json",
 				success: function(data) {
-					$("#map-success").show().html(data)		
+					$("#map-success").show().text(data)
 				},
 				error: function(jqXHR, textStatus, errorThrown) {
 					alert('An error occurred... open console for more information!');

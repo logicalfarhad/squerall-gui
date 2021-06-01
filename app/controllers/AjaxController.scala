@@ -1,32 +1,23 @@
 package controllers
 
-import org.dizitart.no2.Document
+import org.mongodb.scala.bson.BsonValue
+import org.mongodb.scala.model.Filters.equal
+import org.mongodb.scala.{Document, MongoClient, MongoCollection, MongoDatabase}
 import org.slf4j.{Logger, LoggerFactory}
-import play.api.Configuration
 import play.api.libs.json._
 import play.api.mvc._
+import services.Helpers.GenericObservable
 import services.MappingsDB
+
 import java.io.File
 import javax.inject._
 import scala.collection.immutable.HashMap
 
-/**
- * This controller creates an `Action` to handle HTTP requests to the
- * application's home page.
- */
 @Singleton
 class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) extends AbstractController(cc) {
-
-  /**
-   * Create an Action to render an HTML page with a welcome message.
-   * The configuration in the `routes` file means that this method
-   * will be called when the application receives a `GET` request with
-   * a path of `/`.
-   */
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
-
-  def setOptions(): Action[Map[String, Seq[String]]] = Action(parse.tolerantFormUrlEncoded) {
-    request =>
+  val mongoCollection: MongoCollection[Document] = database.get_mongo_db_collection("mongocollection")
+  def setOptions(): Action[Map[String, Seq[String]]] = Action(parse.tolerantFormUrlEncoded) { implicit request =>
       val sentity: String = request.body.get("entity").map(_.head).getOrElse("")
       val stype: String = request.body.get("type").map(_.head).getOrElse("")
       val source: String = request.body.get("source").map(_.head).getOrElse("")
@@ -34,34 +25,24 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
       val header: String = request.body.get("options[header]").map(_.head).getOrElse("")
       val mode: String = request.body.get("options[mode]").map(_.head).getOrElse("")
       val fileexists: Boolean = new File(source).exists()
-      val collection = database.get_collection("mappings")
-      request.session
-        .get("connected")
-        .map { _ =>
-          if(fileexists){
+          if (fileexists) {
             var mapObj: HashMap[String, String] = HashMap()
             mapObj += ("delimiter" -> delimiter)
             mapObj += ("header" -> header)
             mapObj += ("mode" -> mode)
-
-            val config = Document.createDocument("config", null)
-            config.put("entity", sentity)
-            config.put("type", stype)
-            config.put("source", source)
-            config.put("options", mapObj)
-            collection.insert(config)
+            val doc: Document = Document("entity" -> sentity,
+              "type" -> stype,
+              "source" -> source,
+              "options" -> Document("delimiter" -> delimiter,
+                "header" -> header,
+                "mode" -> mode))
+            mongoCollection.insertOne(doc).results()
           }
           Ok(Json.toJson({fileexists}))
-        }.getOrElse {
+      }
 
-        import org.dizitart.no2.filters.Filters
-        collection.remove(Filters.ALL)
-          Unauthorized("Oops, you are not connected")
-        }
-  }
-
-  def newMappings: Action[Map[String, Seq[String]]] = Action(parse.tolerantFormUrlEncoded) {
-    request =>
+  def newMappings: Action[Map[String, Seq[String]]] = Action(parse.tolerantFormUrlEncoded) { implicit request =>
+      request.session.get("user").get
       val mappings: String = request.body.get("mappings").map(_.head).getOrElse("")
       val pk: String = request.body.get("pk").map(_.head).getOrElse("")
       val clss: String = request.body.get("clss").map(_.head).getOrElse("")
@@ -71,22 +52,15 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
       val src: String = request.body.get("src").map(_.head).getOrElse("")
       val dtype: String = request.body.get("dtype").map(_.head).getOrElse("")
 
-      import org.dizitart.no2.Document
-      import org.dizitart.no2.filters.Filters
-
-      var propertiesMap: HashMap[String, String] = new HashMap()
-      var prefixMap: HashMap[String, String] = new HashMap()
-      val cursor = database.get_cursor("mappings", Filters.eq("entity", entity))
+      var propertiesMap = Document()
       var returnMsg = ""
-      val collection = database.get_collection("mappings")
 
-      if (cursor.size() > 0) {
-        collection.remove(Filters.eq("entity", entity))
-        returnMsg = "Entity already exists, it has been overwritten"
-      } else {
+      mongoCollection.find(equal("entity", entity)).first().map(x => {
         returnMsg = "Entity added"
-      }
+        println(x.get("entity").get.asString().getValue)
+      }).printHeadResult("Entry added")
 
+      var prefixMap = Document()
       prefixMap += ("rr" -> "http://www.w3.org/ns/r2rml#")
       prefixMap += ("rml" -> "http://semweb.mmlab.be/ns/rml#")
       prefixMap += ("ql" -> "http://semweb.mmlab.be/ns/ql#")
@@ -112,21 +86,22 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
           }
       }
 
-      val doc = Document.createDocument("entity", entity)
-        .put("prolog", prefixMap)
-        .put("source", src)
-        .put("type", dtype)
-        .put("propertiesMap", propertiesMap)
+      var document = Document()
 
+      document += ("type" -> dtype)
+      document += ("source" -> src)
+      document += ("prolog" -> prefixMap)
+      document += ("propertiesMap" -> propertiesMap)
       if (dtype == "mongodb")
-        doc.put("ID", "_id")
+        document += ("ID" -> "_id")
       else
-        doc.put("ID", pk.replace("\"", ""))
-
+        document += ("ID" -> pk.replace("\"", ""))
       if (clss != "")
-        doc.put("class", shortns_clss + ":" + clss.replace(ns_clss, ""))
+        document += ("class" -> (shortns_clss + ":" + clss.replace(ns_clss, "")))
 
-      collection.insert(doc)
+      val mod = Document("$set" -> document)
+      mongoCollection.updateOne(equal("entity", entity), mod)
+        .printHeadResult("Update Result")
       Ok(Json.stringify(Json.toJson(returnMsg)))
   }
 
@@ -137,9 +112,9 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
     var newMap: Map[String, String] = Map()
 
     keyValueBits.foreach(kv => {
-      val kvbits = kv.split(",")
-      val k = kvbits(0)
-      val v = kvbits(1)
+      val kv_bits = kv.split(",")
+      val k = kv_bits(0)
+      val v = kv_bits(1)
       newMap = newMap + (k -> v)
     })
     newMap
@@ -164,6 +139,7 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
     }
 
     documents.forEach(d => {
+
       val predicatesMap = d.get("propertiesMap").asInstanceOf[HashMap[String, String]]
       val prolog = d.get("prolog").asInstanceOf[HashMap[String, String]]
       var predicates = predicatesMap.keys
@@ -204,22 +180,29 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
   }
 
   def generateMappings: Action[AnyContent] = Action {
-    val cursor = database.get_cursor("mappings", null)
     var rml = ""
-    var allPrefixes: HashMap[String, String] = new HashMap()
+    var prefixMap: Map[String, String] = Map()
+    var propertiesMap: Map[String, String] = Map()
 
-
-    cursor.forEach(document => {
-      val prolog = document.get("prolog").asInstanceOf[HashMap[String, String]]
-      val entity = document.get("entity").toString
-      val source = document.get("source").toString
+    mongoCollection.find().map(document => {
+      val prolog: Option[BsonValue] = document.get("prolog")
+      val entity = document.getString("entity")
+      val source = document.getString("source")
       database.csv_file_path = source
-      val clss = if (document.get("class") != null) document.get("class").toString
-      val id = document.get("ID").toString
-      val dtype = document.get("type").toString
-      val propertiesMap = document.get("propertiesMap").asInstanceOf[HashMap[String, String]]
+      val clss = if (document.getString("class") != null)
+        document.getString("class")
+      val id = document.getString("ID")
+      val dtype = document.getString("type")
+      val properties: Option[BsonValue] = document.get("propertiesMap")
 
-      prolog.foreach(pre => allPrefixes += (pre._1 -> pre._2))
+      prolog match {
+        case Some(s) => s.asDocument().entrySet().forEach(x => {
+          val opt_key = x.getKey
+          val opt_val = x.getValue.asString().getValue
+          prefixMap += (opt_key -> opt_val)
+        })
+        case None => println("")
+      }
 
       rml = rml + "\n\n<#" + entity + "Mapping> a rr:TriplesMap;"
       rml = rml + "\n\trml:logicalSource ["
@@ -231,6 +214,15 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
       rml = rml + "\n\t\trr:class " + clss
       rml = rml + "\n\t];\n"
 
+      properties match {
+        case Some(s) => s.asDocument().entrySet().forEach(x => {
+          val opt_key = x.getKey
+          val opt_val = x.getValue.asString().getValue
+          propertiesMap += (opt_key -> opt_val)
+        })
+        case None => println("")
+      }
+
       propertiesMap.zipWithIndex.foreach {
         case (item, index) =>
           rml = rml + "\n\trr:predicateObjectMap ["
@@ -241,17 +233,19 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
             rml = rml + "\n\t\trr:objectMap [rml:reference " + item._2 + "]]."
           }
       }
-    })
 
-    allPrefixes.foreach { item => {
-      if (item._1 == "ex") {
-        rml = "@base <" + item._2 + ">.\n" + rml
-      } else {
-        rml = "@prefix " + item._1 + ": <" + item._2 + ">.\n" + rml
+      prefixMap.foreach { item => {
+        if (item._1 == "ex") {
+          rml = "@base <" + item._2 + ">.\n" + rml
+        } else {
+          rml = "@prefix " + item._1 + ": <" + item._2 + ">.\n" + rml
+        }
       }
-    }
-    }
-    database.rml_text = rml
+      }
+      database.rml_text = rml
+    }).printResults("Mapping Generated")
+
+
     Ok(Json.toJson(Json.obj(
       "csv_file_path" -> database.csv_file_path,
       "rml_text" -> database.rml_text,

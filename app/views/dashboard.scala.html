@@ -1,45 +1,39 @@
 @(message: String, style: String = "scala") @defining(play.core.PlayVersion.current) { version =>
 
-<section id="cd-timeline" class="cd-container">
-    <div class="cd-timeline-block">
-        <div class="cd-timeline-img cd-movie">
+    <div class="container py-4">
+        <div class="p-5 mb-4 bg-light rounded-3">
+          <div class="container-fluid py-5">
+            <h1 class="display-5 fw-bold">Squerall GUI</h1>
+            <p class="col-md-8 fs-4">
+                Squerall-GUI is the user interface of Squerall --a solution for querying Data Lakes in a unified manner. Squerall-GUI produces three input files used by Squerall to execute queries:
+            </p>
+            <ul class="list-group">
+                <li class="list-group-item"><strong>Config:</strong> It stores information needed to connect to a data source, e.g., host, port, user, password, cluster name, replicas number, etc.</li>
+                <li class="list-group-item"><strong>Mappings:</strong> A dedicate database (embedded) storing mappings between data and ontology terms.</li>
+                <li class="list-group-item"><strong>Query:</strong> SPARQL query to pass to Squerall for execution.</li>
+              </ul>
+          </div>
         </div>
-        <!-- cd-timeline-img -->
-
-        <div class="cd-timeline-content">
-            <a href="@routes.SquerallController.addSource()" class="dash">1. Connect to a datasource</a>
-            <p>In order to enable accessing a data source, you need to provide access and configuration settings <a href="https://github.com/EIS-Bonn/Squerall-GUI#1-connection-ui" target="_blank">(Read more)</a>.</p>
+    
+        <div class="row align-items-md-stretch">
+          <div class="col-md-4">
+            <div class="h-100 p-5 bg-light border rounded-3">
+              <h3>1. Connect to a datasource</h3>
+              <p>In order to enable accessing a data source, you need to provide access and configuration settings <a href="https://github.com/EIS-Bonn/Squerall-GUI#1-connection-ui" target="_blank">(Read more)</a>.</p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="h-100 p-5 bg-light border rounded-3">
+              <h3>2. Map data within a datasource</h3>
+              <p>In order to allow the querying of data inside the data source, you need next to map its schema to ontology classes and properties <a href="https://github.com/EIS-Bonn/Squerall-GUI#2-mappings-ui" target="_blank">(Read more)</a>.</p>             
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="h-100 p-5 bg-light border rounded-3">
+              <h3>3. Querying the data lake</h3>
+              <p>In this step you are guided through the creation of correct queries, that potentially return results, by suggesting elements from the schema <a href="https://github.com/EIS-Bonn/Squerall-GUI#3-query-ui" target="_blank">(Read more)</a>.</p>
+            </div>
+          </div>
         </div>
-        <!-- cd-timeline-content -->
-    </div>
-    <!-- cd-timeline-block -->
-
-    <div class="cd-timeline-block">
-        <div class="cd-timeline-img cd-picture">
-        </div>
-        <!-- cd-timeline-img -->
-
-        <div class="cd-timeline-content">
-            <a href="@routes.SquerallController.addMappings()" class="dash">2. Map data within a datasource</a>
-            <p>In order to allow the querying of data inside the data source, you need next to map its schema to ontology classes and properties <a href="https://github.com/EIS-Bonn/Squerall-GUI#2-mappings-ui" target="_blank">(Read more)</a>.</p>
-        </div>
-        <!-- cd-timeline-content -->
-    </div>
-    <!-- cd-timeline-block -->
-
-
-    <div class="cd-timeline-block" onclick="location.href='@routes.SquerallController.addMappings()'">
-        <div class="cd-timeline-img cd-movie">
-        </div>
-        <!-- cd-timeline-img -->
-
-        <div class="cd-timeline-content">
-            <a href="@routes.SquerallController.query()" class="dash">3. Querying the data lake</a></h1>
-            <p>In this step you are guided through the creation of correct queries, that potentially return results, by suggesting elements from the schema <a href="https://github.com/EIS-Bonn/Squerall-GUI#3-query-ui" target="_blank">(Read more)</a>.</p>
-        </div>
-        <!-- cd-timeline-content -->
-    </div>
-    <!-- cd-timeline-block -->
-</section>
-<!-- cd-timeline -->
+      </div>
 }
