@@ -55,7 +55,7 @@ class MappingsDBInstance @Inject()(configuration: Configuration) extends Mapping
 
   override def get_mongo_db_collection(name: String): MongoCollection[Document] = {
     val mongodb = get_mongo_client.getDatabase("test")
-    mongodb.getCollection("name")
+    mongodb.getCollection(name)
   }
 
   override def get_mongo_client: MongoClient = {
