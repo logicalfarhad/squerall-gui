@@ -18,7 +18,7 @@ import scala.concurrent.Future
 class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) extends AbstractController(cc) {
 
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
-  val mongoCollection: MongoCollection[Document] = database.get_mongo_db_collection("mongocollection")
+  val mongoCollection: MongoCollection[Document] = database.get_mongo_db_collection("mappingcollection")
 
   def setOptions(): Action[Map[String, Seq[String]]] = Action.async(parse.tolerantFormUrlEncoded) { implicit request =>
     val sentity: String = request.body.get("entity").map(_.head).getOrElse("")

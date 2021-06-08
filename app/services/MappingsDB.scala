@@ -54,7 +54,7 @@ class MappingsDBInstance @Inject()(configuration: Configuration) extends Mapping
   }
 
   override def get_mongo_db_collection(name: String): MongoCollection[Document] = {
-    val mongodb = get_mongo_client.getDatabase("test")
+    val mongodb = get_mongo_client.getDatabase("vocoreg")
     mongodb.getCollection(name)
   }
 

@@ -17,7 +17,7 @@ import scala.io.Source
 class SquerallController @Inject()(cc: ControllerComponents, database: MappingsDB) extends AbstractController(cc) {
 
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
-  val mongoCollection: MongoCollection[Document] = database.get_mongo_db_collection("mongocollection")
+  val mongoCollection: MongoCollection[Document] = database.get_mongo_db_collection("mappingcollection")
 
   def index: Action[AnyContent] = Action {
     Ok(views.html.squerall("Home", null)).withSession("session" ->UUID.randomUUID().toString)
