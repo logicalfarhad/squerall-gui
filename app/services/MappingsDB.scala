@@ -14,9 +14,7 @@ trait MappingsDB {
   var instance_name: String = ""
 
   def get_db: Nitrite
-
   def connect_db: Nitrite
-
   def get_mongo_client:MongoClient
   def get_cursor(name: String, filter: Filter): Cursor
   def get_mongo_db_collection(name:String):MongoCollection[Document]

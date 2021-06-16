@@ -4,21 +4,23 @@ import org.mongodb.scala.bson.BsonValue
 import org.mongodb.scala.model.Filters.equal
 import org.mongodb.scala.{Document, MongoCollection}
 import org.slf4j.{Logger, LoggerFactory}
-import play.api.libs.json._
+import play.api.libs.json.Format.GenericFormat
+import play.api.libs.json.Json
+import play.api.libs.json.Json._
 import play.api.mvc._
 import services.Helpers.GenericObservable
-import services.MappingsDB
-
+import services.{MappingsDB, Prefix}
 import java.io.File
 import javax.inject._
 import scala.collection.immutable.HashMap
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.Future
 
 @Singleton
 class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) extends AbstractController(cc) {
 
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
-  val mongoCollection: MongoCollection[Document] = database.get_mongo_db_collection("mappingcollection")
+  val mongoCollection: MongoCollection[Document] = database.get_mongo_db_collection("mapping")
 
   def setOptions(): Action[Map[String, Seq[String]]] = Action.async(parse.tolerantFormUrlEncoded) { implicit request =>
     val sentity: String = request.body.get("entity").map(_.head).getOrElse("")
@@ -42,12 +44,14 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
             "header" -> header,
             "mode" -> mode))
         mongoCollection.insertOne(doc).results()
+        database.get_mongo_client.close()
       }
-      Future.successful(Ok(Json.toJson({
+      Future.successful(Ok(toJson({
         file_exists
       })))
     } else {
-     Future.successful(Redirect(routes.SquerallController.index()))
+      database.get_mongo_client.close()
+      Future.successful(Redirect(routes.SquerallController.index()))
     }
   }
 
@@ -66,7 +70,6 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
 
     mongoCollection.find(equal("entity", entity)).first().map(x => {
       returnMsg = "Entity added"
-      println(x.get("entity").get.asString().getValue)
     }).printHeadResult("Entry added")
 
     var prefixMap = Document()
@@ -74,10 +77,9 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
     prefixMap += ("rml" -> "http://semweb.mmlab.be/ns/rml#")
     prefixMap += ("ql" -> "http://semweb.mmlab.be/ns/ql#")
     prefixMap += ("ex" -> "http://example.com/ns#")
-    prefixMap += ("rdf" -> "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
-    prefixMap += ("rdfs" -> "http://www.w3.org/2000/01/rdf-schema#")
-    prefixMap += ("xsd" -> "http://www.w3.org/2001/XMLSchema#")
-    prefixMap += ("ex" -> "http://example.com/ns#")
+    // prefixMap += ("rdf" -> "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+    // prefixMap += ("rdfs" -> "http://www.w3.org/2000/01/rdf-schema#")
+    //prefixMap += ("xsd" -> "http://www.w3.org/2001/XMLSchema#")
 
     val mp = JSONstringToMap(mappings)
     mp.foreach {
@@ -89,7 +91,6 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
           val pred_url_bits = v.replace("#", "/").split("/")
           val pred = pred_url_bits(pred_url_bits.length - 1).replace("\"", "") // eg. legalName
           val ns = pred_url.replace(pred, "") // eg. http://purl.org/goodrelations/v1#
-
           propertiesMap += (short_ns + ":" + pred -> k)
           prefixMap += (short_ns.replace("\"", "") -> ns)
         }
@@ -109,9 +110,9 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
       document += ("class" -> (shortns_clss + ":" + clss.replace(ns_clss, "")))
 
     val mod = Document("$set" -> document)
-    mongoCollection.updateOne(equal("entity", entity), mod)
-      .printHeadResult("Update Result")
-    Ok(Json.stringify(Json.toJson(returnMsg)))
+    mongoCollection.updateOne(equal("entity", entity), mod).printHeadResult("Update Result")
+    database.get_mongo_client.close()
+    Ok(stringify(toJson(returnMsg)))
   }
 
   // Helping methods
@@ -166,7 +167,7 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
       })
       suggestedPredicates = suggestedPredicates ++ predicates.filter(x => x.split(":")(1).contains(p) || x.split(":")(1).contains(p.toLowerCase))
     })
-    Ok(Json.stringify(Json.toJson(suggestedPredicates)))
+    Ok(stringify(toJson(suggestedPredicates)))
   }
 
   def getClasses(c: String): Action[AnyContent] = Action {
@@ -185,15 +186,21 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
       if (clssName.contains(c))
         suggestedClasses += namespaceAbbreviation + ":" + cl
     })
-    Ok(Json.stringify(Json.toJson(suggestedClasses)))
+    Ok(stringify(toJson(suggestedClasses)))
   }
 
   def generateMappings: Action[AnyContent] = Action {
+
+    //implicit request => {
     var rml = ""
+    var prefixList = new ListBuffer[Prefix]()
     var prefixMap: Map[String, String] = Map()
     var propertiesMap: Map[String, String] = Map()
 
+    var prefix: Prefix = null
     mongoCollection.find().map(document => {
+      prefix = new Prefix()
+
       val prolog: Option[BsonValue] = document.get("prolog")
       val entity = document.getString("entity")
       val source = document.getString("source")
@@ -204,24 +211,24 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
       val dtype = document.getString("type")
       val properties: Option[BsonValue] = document.get("propertiesMap")
 
+
+      prefix.entity = entity
+      prefix.source = source
+      prefix.clss = clss
+      prefix.id = id
+      prefix.dtype = dtype
+
+
       prolog match {
         case Some(s) => s.asDocument().entrySet().forEach(x => {
           val opt_key = x.getKey
           val opt_val = x.getValue.asString().getValue
           prefixMap += (opt_key -> opt_val)
         })
-        case None => println("")
+        case None => println("Did not find anything");
       }
+      prefix.prefixMap = prefixMap
 
-      rml = rml + "\n\n<#" + entity + "Mapping> a rr:TriplesMap;"
-      rml = rml + "\n\trml:logicalSource ["
-      rml = rml + "\n\t\trml:source \"" + source + "\";"
-      rml = rml + "\n\t\trml:referenceFormulation ql:" + dtype.toUpperCase
-      rml = rml + "\n\t];"
-      rml = rml + "\n\trr:subjectMap ["
-      rml = rml + "\n\t\trr:template \"http://example.com/{" + id + "}\";"
-      rml = rml + "\n\t\trr:class " + clss
-      rml = rml + "\n\t];\n"
 
       properties match {
         case Some(s) => s.asDocument().entrySet().forEach(x => {
@@ -232,18 +239,40 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
         case None => println("")
       }
 
-      propertiesMap.zipWithIndex.foreach {
-        case (item, index) =>
+      prefix.propertiesMap = propertiesMap
+      prefixList += prefix
+    }).printResults("Mapping Generated for multiple mapping objects")
+
+
+
+    database.get_mongo_client.close()
+
+
+
+    prefixList.indices.foreach(index => {
+      rml = rml + "\n\n<#" + prefixList(index).entity + "Mapping> a rr:TriplesMap;"
+      rml = rml + "\n\trml:logicalSource ["
+      rml = rml + "\n\t\trml:source \"" + prefixList(index).source + "\";"
+      rml = rml + "\n\t\trml:referenceFormulation ql:" + prefixList(index).dtype.toUpperCase
+      rml = rml + "\n\t];"
+      rml = rml + "\n\trr:subjectMap ["
+      rml = rml + "\n\t\trr:template \"http://example.com/{" + prefixList(index).id + "}\";"
+      rml = rml + "\n\t\trr:class " + prefixList(index).clss
+      rml = rml + "\n\t];\n"
+
+
+      prefixList(index).propertiesMap.zipWithIndex.foreach {
+        case (item, i) =>
           rml = rml + "\n\trr:predicateObjectMap ["
           rml = rml + "\n\t\trr:predicate " + item._1 + ";"
-          if (index < propertiesMap.size - 1) {
+          if (i < prefixList(index).propertiesMap.size - 1) {
             rml = rml + "\n\t\trr:objectMap [rml:reference " + item._2 + "]];"
           } else {
             rml = rml + "\n\t\trr:objectMap [rml:reference " + item._2 + "]]."
           }
       }
 
-      prefixMap.foreach { item => {
+      prefixList(index).prefixMap.zipWithIndex.foreach { case (item, _) => {
         if (item._1 == "ex") {
           rml = "@base <" + item._2 + ">.\n" + rml
         } else {
@@ -251,10 +280,9 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
         }
       }
       }
-      database.rml_text = rml
-    }).printResults("Mapping Generated")
+    })
 
-
+    database.rml_text = rml
     Ok(Json.toJson(Json.obj(
       "csv_file_path" -> database.csv_file_path,
       "rml_text" -> database.rml_text,
