@@ -27,6 +27,7 @@ $(() => {
     })
 
     $('.addSrc').on('click', function (e) {
+        $("form#svSrc").removeClass('was-validated')
         $("#sourceModal").modal('show')
         const type = $(this).data("type");
         let data = datasource.get(type);

@@ -1,6 +1,5 @@
 package controllers
 
-import org.mongodb.scala.bson.BsonValue
 import org.mongodb.scala.model.Filters.equal
 import org.mongodb.scala.{Document, MongoCollection}
 import org.slf4j.{Logger, LoggerFactory}
@@ -10,7 +9,6 @@ import play.api.libs.json.Json._
 import play.api.mvc._
 import services.Helpers.GenericObservable
 import services.{MappingsDB, Prefix}
-
 import java.io.File
 import javax.inject._
 import scala.collection.immutable.HashMap
@@ -18,10 +16,10 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.Future
 
 @Singleton
-class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) extends AbstractController(cc) {
+class AjaxController @Inject()(cc: ControllerComponents, repository: MappingsDB) extends AbstractController(cc) {
 
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
-  val mongoCollection: MongoCollection[Document] = database.get_mongo_db_collection("mapping")
+  val mongoCollection: MongoCollection[Document] = repository.get_mongo_db_collection("mapping")
 
   def setOptions(): Action[Map[String, Seq[String]]] = Action.async(parse.tolerantFormUrlEncoded) { implicit request =>
     val sentity: String = request.body.get("entity").map(_.head).getOrElse("")
@@ -45,13 +43,13 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
             "header" -> header,
             "mode" -> mode))
         mongoCollection.insertOne(doc).results()
-        database.get_mongo_client.close()
+        repository.get_mongo_client.close()
       }
       Future.successful(Ok(toJson({
         file_exists
       })))
     } else {
-      database.get_mongo_client.close()
+      repository.get_mongo_client.close()
       Future.successful(Redirect(routes.SquerallController.index()))
     }
   }
@@ -77,7 +75,7 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
     prefixMap += ("rr" -> "http://www.w3.org/ns/r2rml#")
     prefixMap += ("rml" -> "http://semweb.mmlab.be/ns/rml#")
     prefixMap += ("ql" -> "http://semweb.mmlab.be/ns/ql#")
-    prefixMap += ("ex" -> "http://example.com/ns#")
+    //prefixMap += ("ex" -> "http://example.com/ns#")
     // prefixMap += ("rdf" -> "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
     // prefixMap += ("rdfs" -> "http://www.w3.org/2000/01/rdf-schema#")
     //prefixMap += ("xsd" -> "http://www.w3.org/2001/XMLSchema#")
@@ -112,7 +110,7 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
 
     val mod = Document("$set" -> document)
     mongoCollection.updateOne(equal("entity", entity), mod).printHeadResult("Update Result")
-    database.get_mongo_client.close()
+    repository.get_mongo_client.close()
     Ok(stringify(toJson(returnMsg)))
   }
 
@@ -139,7 +137,7 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
 
     import org.dizitart.no2.Document
 
-    val cursor = database.get_cursor("mapping", null)
+    val cursor = repository.get_cursor("mapping", null)
     val projection = Document.createDocument("propertiesMap", null).put("prolog", null)
     val documents = cursor.project(projection)
     var suggestedPredicates: Set[String] = Set()
@@ -154,7 +152,7 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
       val predicatesMap = d.get("propertiesMap").asInstanceOf[HashMap[String, String]]
       val prolog = d.get("prolog").asInstanceOf[HashMap[String, String]]
       var predicates = predicatesMap.keys
-      val has = value.map(_.split("\\s\\(")(0)) // E.g. get "npg:date" from "npg:date (http://ns.nature.com/terms/)""
+     // val has = value.map(_.split("\\s\\(")(0)) // E.g. get "npg:date" from "npg:date (http://ns.nature.com/terms/)""
       /*if (has.nonEmpty && predicates.containsAll(has)) { // Suggest predicate from entities having all the already-entered predicates in the query
 
       } else if (has.isEmpty) {
@@ -175,7 +173,7 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
     import org.dizitart.no2.filters.Filters
 
     var suggestedClasses: Set[String] = Set()
-    val cursor = database.get_cursor("mapping", Filters.regex("class", c))
+    val cursor = repository.get_cursor("mapping", Filters.regex("class", c))
 
     cursor.forEach(document => {
       val prologMap = document.get("prolog").asInstanceOf[HashMap[String, String]]
@@ -195,57 +193,22 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
     //implicit request => {
     var rml = ""
     var prefixList = new ListBuffer[Prefix]()
-    var prefixMap: Map[String, String] = Map()
-    var propertiesMap: Map[String, String] = Map()
-
-    var prefix: Prefix = null
     mongoCollection.find().map(document => {
-      prefix = new Prefix()
-
-      val prolog: Option[BsonValue] = document.get("prolog")
-      val entity = document.getString("entity")
-      val source = document.getString("source")
-      database.csv_file_path = source
-      val clss = if (document.getString("class") != null)
+      var prefix = new Prefix()
+      prefix.entity = document.getString("entity")
+      prefix.source = document.getString("source")
+      repository.csv_file_path = prefix.source
+      prefix.clss = if (document.getString("class") != null)
         document.getString("class")
-      val id = document.getString("ID")
-      val dtype = document.getString("type")
-      val properties: Option[BsonValue] = document.get("propertiesMap")
-
-
-      prefix.entity = entity
-      prefix.source = source
-      prefix.clss = clss
-      prefix.id = id
-      prefix.dtype = dtype
-
-
-      prolog match {
-        case Some(s) => s.asDocument().entrySet().forEach(x => {
-          val opt_key = x.getKey
-          val opt_val = x.getValue.asString().getValue
-          prefixMap += (opt_key -> opt_val)
-        })
-        case None => println("Did not find anything");
-      }
-      prefix.prefixMap = prefixMap
-
-
-      properties match {
-        case Some(s) => s.asDocument().entrySet().forEach(x => {
-          val opt_key = x.getKey
-          val opt_val = x.getValue.asString().getValue
-          propertiesMap += (opt_key -> opt_val)
-        })
-        case None => println("")
-      }
-
-      prefix.propertiesMap = propertiesMap
+      prefix.id = document.getString("ID")
+      prefix.dtype = document.getString("type")
+      prefix.prefixMap = repository.getMapFromOption(document.get("prolog"))
+      prefix.propertiesMap = repository.getMapFromOption(document.get("propertiesMap"))
       prefixList += prefix
     }).printResults("Mapping Generated for multiple mapping objects")
 
 
-    database.get_mongo_client.close()
+    repository.get_mongo_client.close()
 
 
     prefixList.indices.foreach(index => {
@@ -266,26 +229,25 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
           rml = rml + "\n\t\trr:predicate " + item._1 + ";"
           if (i < prefixList(index).propertiesMap.size - 1) {
             rml = rml + "\n\t\trr:objectMap [rml:reference " + item._2 + "]];"
-          } else {
-            rml = rml + "\n\t\trr:objectMap [rml:reference " + item._2 + "]]."
-          }
+          } else rml = rml + "\n\t\trr:objectMap [rml:reference " + item._2 + "]]."
       }
       prefixList(index).prefixMap.foreach(item => {
         rml = "@prefix " + item._1 + ": <" + item._2 + ">.\n" + rml
       })
 
-      if (index < prefixList.size - 1) {
+      if (prefixList.size == 1) {
+        rml = "@base <http://example.com/ns#>.\n" + rml
+      } else if (index < prefixList.size - 1) {
         rml = "@base <http://example.com/ns#>.\n" + rml
       }
-
     })
 
-    database.rml_text = rml
+    repository.rml_text = rml
     Ok(Json.toJson(Json.obj(
-      "csv_file_path" -> database.csv_file_path,
-      "rml_text" -> database.rml_text,
-      "instance_name" -> database.instance_name,
-      "branch_name" -> database.branch_name
+      "csv_file_path" -> repository.csv_file_path,
+      "rml_text" -> repository.rml_text,
+      "instance_name" -> repository.instance_name,
+      "branch_name" -> repository.branch_name
     )))
   }
 }

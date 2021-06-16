@@ -8,7 +8,7 @@ $(document).ready(function(){
                 mp = data
                 $("#mappings-box").show()
                 $("#exportMappings").show()
-                $("#mappings-box").text(data.rml_text)
+                $("#mappings-box").text(mp.rml_text)
                 $("#exportMappings").html("<br/><button type='button' class='btn btn-primary' id='saveMappings' style='margin-bottom: 10px;'>Export mappings</button>")
             },
             error: function(jqXHR, textStatus, errorThrown) {
