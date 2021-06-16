@@ -10,6 +10,7 @@ import play.api.libs.json.Json._
 import play.api.mvc._
 import services.Helpers.GenericObservable
 import services.{MappingsDB, Prefix}
+
 import java.io.File
 import javax.inject._
 import scala.collection.immutable.HashMap
@@ -244,9 +245,7 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
     }).printResults("Mapping Generated for multiple mapping objects")
 
 
-
     database.get_mongo_client.close()
-
 
 
     prefixList.indices.foreach(index => {
@@ -271,15 +270,14 @@ class AjaxController @Inject()(cc: ControllerComponents, database: MappingsDB) e
             rml = rml + "\n\t\trr:objectMap [rml:reference " + item._2 + "]]."
           }
       }
+      prefixList(index).prefixMap.foreach(item => {
+        rml = "@prefix " + item._1 + ": <" + item._2 + ">.\n" + rml
+      })
 
-      prefixList(index).prefixMap.zipWithIndex.foreach { case (item, _) => {
-        if (item._1 == "ex") {
-          rml = "@base <" + item._2 + ">.\n" + rml
-        } else {
-          rml = "@prefix " + item._1 + ": <" + item._2 + ">.\n" + rml
-        }
+      if (index < prefixList.size - 1) {
+        rml = "@base <http://example.com/ns#>.\n" + rml
       }
-      }
+
     })
 
     database.rml_text = rml
