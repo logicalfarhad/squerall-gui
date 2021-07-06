@@ -1,5 +1,7 @@
 $(document).ready(function(){
-    let mp={};
+    let mp={
+
+    };
     $("#generateMappings").click(function() {
         $.ajax({
             method: "GET",
@@ -24,7 +26,7 @@ $(document).ready(function(){
         })
     })
     $("#mappings").on("click", "button#saveMappings", function () {
-        $.post("http://localhost:3000/generatemapping",
+        $.post("http://localhost:8000/generatemapping",
             {data: mp}, function (data) {
                 console.log(data)
                 if (data === true) {

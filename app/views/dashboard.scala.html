@@ -2,37 +2,35 @@
 
     <div class="container py-4">
         <div class="p-5 mb-4 bg-light rounded-3">
+            <h5 class="display-4 fw-bold">Steps to generate mapping</h5>
           <div class="container-fluid py-5">
-            <h1 class="display-5 fw-bold">Squerall GUI</h1>
-            <p class="col-md-8 fs-4">
-                Squerall-GUI is the user interface of Squerall --a solution for querying Data Lakes in a unified manner. Squerall-GUI produces three input files used by Squerall to execute queries:
-            </p>
-            <ul class="list-group">
-                <li class="list-group-item"><strong>Config:</strong> It stores information needed to connect to a data source, e.g., host, port, user, password, cluster name, replicas number, etc.</li>
-                <li class="list-group-item"><strong>Mappings:</strong> A dedicate database (embedded) storing mappings between data and ontology terms.</li>
-                <li class="list-group-item"><strong>Query:</strong> SPARQL query to pass to Squerall for execution.</li>
-              </ul>
-          </div>
-        </div>
-    
-        <div class="row align-items-md-stretch">
-          <div class="col-md-4">
-            <div class="h-100 p-5 bg-light border rounded-3">
-              <h3>1. Connect to a datasource</h3>
-              <p>In order to enable accessing a data source, you need to provide access and configuration settings <a href="https://github.com/EIS-Bonn/Squerall-GUI#1-connection-ui" target="_blank">(Read more)</a>.</p>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="h-100 p-5 bg-light border rounded-3">
-              <h3>2. Map data within a datasource</h3>
-              <p>In order to allow the querying of data inside the data source, you need next to map its schema to ontology classes and properties <a href="https://github.com/EIS-Bonn/Squerall-GUI#2-mappings-ui" target="_blank">(Read more)</a>.</p>             
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="h-100 p-5 bg-light border rounded-3">
-              <h3>3. Querying the data lake</h3>
-              <p>In this step you are guided through the creation of correct queries, that potentially return results, by suggesting elements from the schema <a href="https://github.com/EIS-Bonn/Squerall-GUI#3-query-ui" target="_blank">(Read more)</a>.</p>
-            </div>
+
+              <div class="list-group">
+                  <a href="#" class="list-group-item list-group-item-action" aria-current="true">
+                      <div class="d-flex w-100 justify-content-between">
+                          <h5 class="mb-1">Add data source</h5>
+                      </div>
+                      <p class="mb-1">Click the Sources menu and click CSV file item. Currently the tool only supports the CSV datasource.</p>
+                  </a>
+                  <a href="#" class="list-group-item list-group-item-action">
+                      <div class="d-flex w-100 justify-content-between">
+                          <h5 class="mb-1">Map data source column to Ontology</h5>
+                      </div>
+                      <p class="mb-1">
+                          When a valid datasource has been added successfully click Mappings menu item.
+                          Click the entity to map each column with ontology prefixes.</p>
+                  </a>
+                  <a href="#" class="list-group-item list-group-item-action">
+                      <div class="d-flex w-100 justify-content-between">
+                          <h5 class="mb-1">Generate Mapping and RDF file</h5>
+                      </div>
+                      <p class="mb-1">
+                          After mapping the columns click save button and after that click the Mappings menu item again.
+                          Now click the Generate mappings to see the mapping in a readonly text box.
+                          Now click the Export mappings button to generate the mapping file and RDF file.
+                      </p>
+                  </a>
+              </div>
           </div>
         </div>
       </div>
