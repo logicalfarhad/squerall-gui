@@ -1,4 +1,4 @@
-@(title:String)(content:Html)
+@(title: String, assetsFinder: AssetsFinder)(content: Html)
 
 <!doctype html>
 <html lang="en">
@@ -6,8 +6,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@title</title>
-    <link href="@routes.Assets.versioned("lib/bootstrap/css/bootstrap.min.css")" rel="stylesheet">
-    <link href="@routes.Assets.versioned("lib/font-awesome/css/all.min.css")" rel="stylesheet">
+    <link href="@assetsFinder.path("lib/bootstrap/css/bootstrap.min.css")" rel="stylesheet">
+    <link href="@assetsFinder.path("lib/font-awesome/css/all.min.css")" rel="stylesheet">
   </head>
   <body>
     <div class="container">
@@ -38,7 +38,7 @@
     <footer class="pt-3 mt-4 text-muted border-top fixed-bottom container">
       © Fraunhofer IAIS
     </footer>
-    <script src="@routes.Assets.versioned("lib/jquery/jquery.min.js")"></script>
-    <script src="@routes.Assets.versioned("lib/bootstrap/js/bootstrap.min.js")"></script>
+    <script src="@assetsFinder.path("lib/jquery/jquery.min.js")"></script>
+    <script src="@assetsFinder.path("lib/bootstrap/js/bootstrap.min.js")"></script>
   </body>
 </html>

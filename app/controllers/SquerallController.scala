@@ -12,12 +12,15 @@ import javax.inject._
 import scala.concurrent.Future
 
 @Singleton
-class SquerallController @Inject()(cc: ControllerComponents, repository: MappingsDB) extends AbstractController(cc) {
+class SquerallController @Inject()(cc: ControllerComponents, repository: MappingsDB)(implicit assetsFinder: AssetsFinder) extends AbstractController(cc) {
 
   val logger: Logger = LoggerFactory.getLogger(this.getClass)
   val mongoCollection: MongoCollection[Document] = repository.get_mongo_db_collection("mapping")
+
+
   def index: Action[AnyContent] = Action {
-    Ok(views.html.squerall("Home", null)).withSession("session" ->UUID.randomUUID().toString)
+    Ok(views.html.squerall("Home", null,assetsFinder))
+      .withSession("session" ->UUID.randomUUID().toString)
   }
 
   def getAll(branchname: String, instanceName: String): Action[AnyContent] = Action {
@@ -27,15 +30,15 @@ class SquerallController @Inject()(cc: ControllerComponents, repository: Mapping
   }
 
   def query: Action[AnyContent] = Action {
-    Ok(views.html.squerall("Query", null))
+    Ok(views.html.squerall("Query", null,assetsFinder))
   }
 
   def addSource(): Action[AnyContent] = Action{ implicit request=>
     val session = request.session.get("session")
     if(session.isDefined){
-     Ok(views.html.squerall("Add source", null))
+     Ok(views.html.squerall("Add source", null,assetsFinder))
     }else{
-      Ok(views.html.squerall("Session Timeout", null))
+      Ok(views.html.squerall("Session Timeout", null,assetsFinder))
     }
   }
 
@@ -50,11 +53,11 @@ class SquerallController @Inject()(cc: ControllerComponents, repository: Mapping
           source_types += (entity -> stype)
         }).printResults("got documents")
       repository.get_mongo_client.close()
-      Future.successful(Ok(views.html.squerall("Add mappings", source_types)))
+      Future.successful(Ok(views.html.squerall("Add mappings", source_types,assetsFinder)))
     }else{
       mongoCollection.drop().printResults("all documents deleted")
       repository.get_mongo_client.close()
-      Future.successful(Ok(views.html.squerall("Session Timeout", null)))
+      Future.successful(Ok(views.html.squerall("Session Timeout", null,assetsFinder)))
     }
   }}
   def annotate(entity: String): Action[AnyContent] = Action{ implicit request =>{
@@ -75,7 +78,7 @@ class SquerallController @Inject()(cc: ControllerComponents, repository: Mapping
         }
       }).printHeadResult()
     repository.get_mongo_client.close()
-    Ok(views.html.squerall1("Annotate source", source, optionList, dtype, schema, entity))
+    Ok(views.html.squerall1("Annotate source", source, optionList, dtype, schema, entity,assetsFinder))
   }}
 
 }

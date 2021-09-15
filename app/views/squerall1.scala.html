@@ -1,12 +1,12 @@
-@(message: String, source: String, options: Map[String,String], dtype: String, schema: String, entity: String)
+@(message: String, source: String, options: Map[String,String], dtype: String, schema: String, entity: String,assetsFinder: AssetsFinder)
 
 @if(message=="Annotate source") {
-<link rel="stylesheet" href="@routes.Assets.versioned("stylesheets/easy-autocomplete.min.css")" />
-<link rel="stylesheet" href="@routes.Assets.versioned("stylesheets/easy-autocomplete.themes.min.css")" />
-<link rel="stylesheet" href="@routes.Assets.versioned("stylesheets/tt.css")" />
-@html("Squerall - Add Source") {
-        @annotate(message, source, options, dtype, schema, entity, style = "scala")
+<link rel="stylesheet" href="@assetsFinder.path("stylesheets/easy-autocomplete.min.css")" />
+<link rel="stylesheet" href="@assetsFinder.path("stylesheets/easy-autocomplete.themes.min.css")" />
+<link rel="stylesheet" href="@assetsFinder.path("stylesheets/tt.css")" />
+@html("Squerall - Add Source", assetsFinder) {
+        @annotate(message, source, options, dtype, schema, entity)
 }
-<script src="@routes.Assets.versioned("javascripts/typeahead.bundle.min.js")"></script>
-<script src="@routes.Assets.versioned("javascripts/annotate.js")"></script>
+<script src="@assetsFinder.path("javascripts/typeahead.bundle.min.js")"></script>
+<script src="@assetsFinder.path("javascripts/annotate.js")"></script>
 }
